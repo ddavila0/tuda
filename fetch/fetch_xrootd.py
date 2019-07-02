@@ -4,8 +4,6 @@
 """Retrieve XRootD job information using Spark"""
 
 from __future__ import print_function
-
-from __future__ import print_function
 from dateutil import parser as dparser
 from subprocess import Popen, PIPE, STDOUT
 from pyspark.sql import Column

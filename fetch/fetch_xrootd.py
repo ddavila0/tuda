@@ -14,7 +14,7 @@ import pyspark.sql.functions as fn
 import pyspark.sql.types as types
 import datetime as dt
 import argparse
-from utils import hadoop_paths, file_date
+from hdfetchs import HDFetchS
 import schemas
 
 # Configure pyspark
@@ -54,36 +54,6 @@ def fetch_xrootd(hdfs_path):
     print("[script] Fetched {}".format(hdfs_path))
     return ds
 
-def fetch(date_min, date_max, hdfs_base, hdfs_ext):
-    """Fetch XRootD records between two given dates"""
-    # Get hdfs paths
-    hdfs_paths = hadoop_paths(date_min, date_max, hdfs_base, hdfs_ext)
-    # Get dataset
-    ds = None
-    for hdfs_path in hdfs_paths:
-        _ds = fetch_xrootd(hdfs_path)
-        if not ds:
-            ds = _ds
-        else:
-            ds = ds.union(_ds)
-        del _ds
-
-    # Write to parquet file on hdfs
-    fdate = file_date(date_min, date_max)
-    (ds.write
-       .option("compression","gzip")
-       .mode("overwrite")
-       .parquet("hdfs://analytix/user/jguiang/shared/XRootD_"+fdate)
-    )
-
-    # Move from hdfs to eos
-    p = Popen("hdfs dfs -get /user/jguiang/shared/XRootD_"+fdate
-              +" /eos/user/j/jguiang/data-access/parquet/",
-              shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, 
-              close_fds=True)
-
-    print (p.stdout.read())
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fetch HDFS XRootD records.")
     parser.add_argument("--datemin", type=str, default=None, help="Minimum date")
@@ -101,7 +71,13 @@ if __name__ == "__main__":
         if date_min > date_max:
             print("ERROR: given minimum date > maximum date")
         else:
-            fetch(date_min, date_max, hdfs_base, hdfs_ext)
+            hdfetchs = HDFetchS(date_min, date_max, hdfs_base, hdfs_ext,
+                                fetch_xrootd, out_name="XRootD")
+            hdfetchs.fetch()
+            hdfetchs.write()
     else:
         yesterday = now - dt.timedelta(days=1)
-        fetch(yesterday, now, hdfs_base, hdfs_ext)
+        hdfetchs = HDFetchS(yesterday, now, hdfs_base, hdfs_ext,
+                            fetch_xrootd, out_name="XRootD")
+        hdfetchs.fetch()
+        hdfetchs.write()

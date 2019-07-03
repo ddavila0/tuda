@@ -23,7 +23,7 @@ sc = SparkContext(conf=conf)
 spark = SparkSession(sc)
 
 def fetch_xrootd(hdfs_path):
-    """ Fetch HDFS XRootD data at a particular path """
+    """Fetch HDFS XRootD records from a particular path"""
 
     # Define servers that confirm cache is at UCSD or CalTech
     servers = ["xrd-cache-1", "xrd-cache-2", "xcache-00", "xcache-01",
@@ -31,8 +31,7 @@ def fetch_xrootd(hdfs_path):
                "xcache-06", "xcache-07", "xcache-08", "xcache-09",
                "xcache-10"]
     # Get job reports
-    inputfile = hdfs_path
-    jobreports = spark.read.json(inputfile)
+    jobreports = spark.read.json(hdfs_path)
 
     # Get dataset
     ds = (jobreports
@@ -52,11 +51,11 @@ def fetch_xrootd(hdfs_path):
                    )
         )
 
-    print("Fetched {}".format(hdfs_path))
+    print("[script] Fetched {}".format(hdfs_path))
     return ds
 
 def fetch(date_min, date_max, hdfs_base, hdfs_ext):
-    """ Fetch HDFS data between two given dates """
+    """Fetch XRootD records between two given dates"""
     # Get hdfs paths
     hdfs_paths = hadoop_paths(date_min, date_max, hdfs_base, hdfs_ext)
     # Get dataset

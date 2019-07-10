@@ -78,7 +78,7 @@ class HDFetchS:
         if self.date_min.month == self.date_max.month:
             hdfs_paths = self.paths(self.date_min.day, self.date_max.day,
                                     self.date_min.month, self.date_min.year,
-                                    self.hdfs_base, hdfs_ext)
+                                    self.hdfs_base, self.hdfs_ext)
         else:
             for month in range(self.date_min.month, self.date_max.month+1):
                 month_start = (1 if month != self.date_min.month 

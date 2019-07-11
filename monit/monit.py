@@ -2,7 +2,8 @@
 
 from datetime import timedelta, datetime as dt
 from argparse import ArgumentParser, RawTextHelpFormatter
-# import aggs
+from calendar import monthrange
+from aggregations import agg_utils
 # import elastic
 # import hdfetchs
 
@@ -59,46 +60,23 @@ def get_time_interval(interval):
     else:
         raise ValueError("invalid interval")
 
-def scan_months(month_min, month_max, year):
-    total = 0
-    for m in range(month_min, month_max+1):
-        # Get month info
-        month = "0"+str(m) if m < 10 else str(m)
-        end = monthrange(year, m)[1]
+def scan_month_range(min_month, max_month, year):
+    result = 0
+    # TODO: Write this function!
+    return result    
 
-        # Make datetime objects
-        date_min = parser.parse("{0} 01 00:00:00 {1} UTC".format(month, year))
-        date_max = parser.parse("{0} {1} 23:59:59 {2} UTC".format(month, end, year))
-
-        # Fetch HDFS records
-        hdfs = HDFetchS(date_min, date_max, hdfs_base, spark, fetch_xrootd)
-        hdfs.fetch()
-        if not hdfs.ds:
-            to_print = "Got empty/null/NoneType pyspark dataset for {0} to {1}\n".format(date_min, date_max)
-            print(to_print)
-            with open("sideband_study.txt", "aw") as fout:
-                fout.write(to_print)
-            continue
-
-        # Count unique jobs for each month
-        hdfs.ds = hdfs.ds.filter(hdfs.ds.app_info != "")
-        count = hdfs.ds.count()
-#         df = hdfs.ds.toPandas()
-#         if df.shape[0] == 0:
-#             print("Got empty dataframe for {0} to {1}".format(date_min, date_max))
-#             continue
-#         total += np.sum(df.app_info != "")
-        total += count
-
-        # Print out info
-        to_print = "{0} app info strings in df from {1} to {2}\n".format(count, date_min, date_max)
-        print(to_print)
-        with open("sideband_study.txt", "aw") as fout:
-            fout.write(to_print)
-
-        # Clean up
-#         del df
-    return total    
+def scan_by_month(min_datetime, max_datetime, aggs):
+    # TODO: properly add aggregations
+    result = 0
+    if min_datetime.year != max_datetime.year:
+        result = scan_month_range(min_datetime.month, 12,
+                                  min_datetime.year)
+        result += scan_month_range(1, max_datetime.month,
+                                   max_datetime.year)
+    else:
+        result = scan_month_range(min_datetime.month, max_datetime.month,
+                                  min_datetime.year) 
+    return result
 
 def monit(interval_code):
     interval_code = int(interval_code)
@@ -111,23 +89,20 @@ def monit(interval_code):
             # Use elastic search
             xrootd_df = elastic.fetch_xrootd(min_timestamp, 
                                              max_timestamp)
-            if xrootd_df:
-                xrootd_aggs = aggs.agg_xrootd(xrootd_df)
-                del xrootd_df
+            xrootd_aggs = agg_utils.run_aggs(xrootd_df, "xrootd")
+            del xrootd_df
             classads_df = elastic.fetch_classads(min_timestamp, 
                                                  max_timestamp)
-            if classads_df:
-                classads_aggs = aggs.agg_classads(classads_df)
-                del classads_df
+            classads_aggs = agg_utils.run_aggs(classads_df, "classads")
+            del classads_df
         elif INTERVALS[interval_code] in LONG_INTERVALS:
             # Use hadoop
-            min_overall_date = dt.fromtimestamp(min_timestamp)
-            max_overall_date = dt.fromtimestamp(max_timestamp)
-            min_month = int(min_overall_date.strftime("%m"))
-            max_month = int(max_overall_date.strftime("%m"))
-            for m in range(min_month, max_month+1):
-                xrootd_df = hdfetchs.fetch_xrootd(date_min, date_max)
-                classads_df = hdfetchs.fetch_classads(date_min, date_max)
+            min_datetime = dt.fromtimestamp(min_timestamp)
+            max_datetime = dt.fromtimestamp(max_timestamp)
+            classads_aggs = scan_by_month(min_datetime, max_datetime,
+                                          aggs.agg_classads)
+            xrootd_aggs = scan_by_month(min_datetime, max_datetime,
+                                        aggs.agg_xrootd)
     return
 
 if __name__ == "__main__":

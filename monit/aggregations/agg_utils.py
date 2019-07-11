@@ -20,7 +20,7 @@ class agg_wrapper():
 
     def __call__(self, func):
         self.func_name = func.__name__
-        self.group_config()
+        self.update_config()
 
         def wrapped_func(*args, **kwargs):
             print("inside wrapper")
@@ -32,7 +32,7 @@ class agg_wrapper():
 
         return wrapped_func
 
-    def group_config(self):
+    def update_config(self):
         """Update global config object"""
         global CONFIGS
         if self.group_name in CONFIGS:

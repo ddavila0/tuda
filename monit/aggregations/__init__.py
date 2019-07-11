@@ -1,0 +1,12 @@
+import glob
+
+MODULE_DIR = __file__.split("__init__")[0]
+# AGG_MODULES = {}
+
+# Import agg modules
+excepts = [__file__, MODULE_DIR+"agg_utils.py"]
+paths = list(set(glob.glob(MODULE_DIR+"*.py"))-set(excepts))
+for path_to_agg in paths:
+    agg_module = (path_to_agg.split("/")[-1]).split(".py")[0]
+    __import__("aggregations."+agg_module)
+    # AGG_MODULES["agg_modules"] = __import__("aggregations."+agg_module)

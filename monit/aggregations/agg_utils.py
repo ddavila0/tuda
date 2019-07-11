@@ -1,7 +1,7 @@
 import json
 import os
 import glob
-from aggregations import MODULE_DIR
+from aggregations import MODULE_DIR, MODULE_NAME
 
 CONFIGS = {}
 
@@ -59,7 +59,7 @@ def run_aggs(df, group_name):
         result = {}
         config = CONFIGS[group_name]
         for module, func_names in config.items():
-            agg_module = getattr(__import__("aggregations"), module)
+            agg_module = getattr(__import__(MODULE_NAME), module)
             for func_name in func_names:
                 agg = getattr(agg_module, func_name)
                 result[func_name] = agg(df)

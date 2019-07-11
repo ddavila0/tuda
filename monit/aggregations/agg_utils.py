@@ -65,8 +65,3 @@ def run_aggs(df, group_name):
                 result[func_name] = agg(df)
 
     return result
-
-def file_dir_from_dunder(file_dunder):
-    """Get directory of a file from its __file__"""
-    file_name = file_dunder.split("/")[-1]
-    return file_dunder.split(file_name)[0]

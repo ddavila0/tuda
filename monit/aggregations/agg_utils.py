@@ -58,10 +58,10 @@ def run_aggs(df, group_name):
     else:
         result = {}
         config = CONFIGS[group_name]
-        for module, func_names in config.items():
-            agg_module = getattr(__import__(MODULE_NAME), module)
+        for agg_module_name, func_names in config.items():
+            agg_module = getattr(__import__(MODULE_NAME), agg_module_name)
             for func_name in func_names:
-                agg = getattr(agg_module, func_name)
-                result[func_name] = agg(df)
+                func = getattr(agg_module, func_name)
+                result[func_name] = func(df)
 
     return result

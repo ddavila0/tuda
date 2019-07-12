@@ -34,4 +34,4 @@ def total_cpu_time(df, chunked=False):
 
 @agg_wrapper(__file__, group_name="classads")
 def exit_code_frac(df, chunked=False):
-    return np.sum(df.exitCode == 0)/df.shape[0]
+    return np.sum(df.exit_code == 0)/df.shape[0]

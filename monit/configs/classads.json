@@ -1,0 +1,24 @@
+config = {
+    "group_name": "classads",
+    "fields": [
+        "data.CRAB_Workflow",
+        "data.CRAB_Id",
+        "data.CRAB_Retry",
+        "data.CRAB_UserHN",
+        "data.ScheddName",
+        "data.RequestCpus",
+        "data.CpuTimeHr",
+        "data.CoreHr",
+        "data.ExitCode"
+    ],
+    "aliases": [
+        "workflow_id",
+        "crab_id",
+        "num_retries",
+        "user_hn",
+        "schedd_name",
+        "num_cpus",
+        "cpu_time",
+        "exit_code"
+    ]
+}

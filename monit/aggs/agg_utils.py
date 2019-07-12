@@ -1,7 +1,6 @@
 import json
 import os
 import glob
-from aggregations import MODULE_DIR, MODULE_NAME
 
 CONFIGS = {}
 
@@ -11,16 +10,13 @@ class agg_wrapper():
     """
 
     def __init__(self, agg_file_dunder, group_name="aggs"):
-        self.func_name = None
         self.group_name = group_name
-
         # Prepend module name to agg file name
         self.agg_module_name = (agg_file_dunder.split("/")[-1]
                                                .split(".py")[0])
 
     def __call__(self, func):
-        self.func_name = func.__name__
-        self.update_config()
+        self.update_config(func)
 
         def wrapped_func(*args, **kwargs):
             print("inside wrapper")
@@ -32,19 +28,19 @@ class agg_wrapper():
 
         return wrapped_func
 
-    def update_config(self):
+    def update_config(self, func):
         """Update global config object"""
         global CONFIGS
         if self.group_name in CONFIGS:
             config = CONFIGS[self.group_name]
             # Update config
             if (self.agg_module_name in config and
-                self.func_name not in config[self.agg_module_name]):
-                    config[self.agg_module_name].append(self.func_name)
+                func not in config[self.agg_module_name]):
+                    config[self.agg_module_name].append(func)
             elif self.agg_module_name not in config:
-                config[self.agg_module_name] = [self.func_name]
+                config[self.agg_module_name] = [func]
         else:
-            config = {self.agg_module_name: [self.func_name]}
+            config = {self.agg_module_name: [func]}
             CONFIGS[self.group_name] = config
         return
 
@@ -58,10 +54,8 @@ def run_aggs(df, group_name):
     else:
         result = {}
         config = CONFIGS[group_name]
-        for agg_module_name, func_names in config.items():
-            agg_module = getattr(__import__(MODULE_NAME), agg_module_name)
-            for func_name in func_names:
-                func = getattr(agg_module, func_name)
-                result[func_name] = func(df)
+        for agg_module_name, funcs in config.items():
+            for func in funcs:
+                result[func.__name__] = func(df)
 
     return result

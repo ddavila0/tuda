@@ -3,7 +3,7 @@
 from datetime import timedelta, datetime as dt
 from argparse import ArgumentParser, RawTextHelpFormatter
 from calendar import monthrange
-from aggregations import agg_utils
+from aggs import agg_utils
 # import elastic
 # import hdfetchs
 
@@ -11,6 +11,7 @@ INTERVALS = ["daily", "weekly", "2 weeks", "4 weeks", "monthly",
              "6 months", "9 months", "yearly"]
 SHORT_INTERVALS = INTERVALS[:5]
 LONG_INTERVALS = INTERVALS[-3:]
+PATH_TO_TOKEN = "./token"
 
 def get_timestamp(dt_obj):
     return float(dt_obj.strftime("%s.%f"))
@@ -85,16 +86,22 @@ def monit(interval_code):
     else:
         interval = INTERVALS[interval_code]
         min_timestamp, max_timestamp = get_time_interval(interval)
+
         if INTERVALS[interval_code] in SHORT_INTERVALS:
             # Use elastic search
-            xrootd_df = elastic.fetch_xrootd(min_timestamp, 
+            xrootd_df = elastic.fetch_xrootd(PATH_TO_TOKEN,
+                                             fields, aliases,
+                                             min_timestamp, 
                                              max_timestamp)
             xrootd_aggs = agg_utils.run_aggs(xrootd_df, "xrootd")
             del xrootd_df
-            classads_df = elastic.fetch_classads(min_timestamp, 
+            classads_df = elastic.fetch_classads(PATH_TO_TOKEN,
+                                                 fields, aliases,
+                                                 min_timestamp, 
                                                  max_timestamp)
             classads_aggs = agg_utils.run_aggs(classads_df, "classads")
             del classads_df
+
         elif INTERVALS[interval_code] in LONG_INTERVALS:
             # Use hadoop
             min_datetime = dt.fromtimestamp(min_timestamp)

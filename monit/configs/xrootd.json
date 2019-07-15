@@ -1,0 +1,5 @@
+{
+    "source_name": "classads", 
+    "hdfs_base": "/project/monitoring/archive/xrootd/raw/gled",
+    "hdfs_ext": "json.gz"
+}

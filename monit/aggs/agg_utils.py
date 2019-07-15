@@ -5,25 +5,19 @@ import glob
 CONFIGS = {}
 
 class agg_wrapper():
-    """Wrapper for a MONIT aggregator that maintains a configuration file
-       essential to the organization of MONIT's plugin system
+    """Wrapper for a MONIT aggregator that maintains a configuration
+       object responsible for the organization of MONIT's plugin system
     """
 
-    def __init__(self, agg_file_dunder, group_name="aggs"):
-        self.group_name = group_name
-        # Prepend module name to agg file name
-        self.agg_module_name = (agg_file_dunder.split("/")[-1]
-                                               .split(".py")[0])
+    def __init__(self, source_name="aggs", post_agg=False):
+        self.source_name = source_name
+        self.agg_type = "post_aggs" if post_agg else "aggs"
 
     def __call__(self, func):
         self.update_config(func)
 
         def wrapped_func(*args, **kwargs):
-            print("inside wrapper")
-            print(args)
-            print(kwargs)
             result = func(*args, **kwargs)
-            print("wrapper done")
             return result
 
         return wrapped_func
@@ -31,31 +25,51 @@ class agg_wrapper():
     def update_config(self, func):
         """Update global config object"""
         global CONFIGS
-        if self.group_name in CONFIGS:
-            config = CONFIGS[self.group_name]
-            # Update config
-            if (self.agg_module_name in config and
-                func not in config[self.agg_module_name]):
-                    config[self.agg_module_name].append(func)
-            elif self.agg_module_name not in config:
-                config[self.agg_module_name] = [func]
+        agg_type = self.agg_type
+        if self.source_name in CONFIGS:
+            config = CONFIGS[self.source_name]
+            if agg_type in config and func not in config[agg_type]:
+                config[agg_type].append(func)
+            elif agg_type not in config:
+                config[agg_type] = [func]
         else:
-            config = {self.agg_module_name: [func]}
-            CONFIGS[self.group_name] = config
+            config = {agg_type: [func]}
+            CONFIGS[self.source_name] = config
+
         return
 
-def run_aggs(df, group_name):
+def run_aggs(df, source_name="aggs"):
     """Run aggregations from a given group"""
     global CONFIGS
-    if not group_name in CONFIGS:
+    if not source_name in CONFIGS:
         valid_groups = (", ").join(CONFIGS.keys())
         raise ValueError("invalid group name "
-                         +"(current groups: {})".format(valid_groups))
+                         + "(current groups: {})".format(valid_groups))
     else:
-        result = {}
-        config = CONFIGS[group_name]
-        for agg_module_name, funcs in config.items():
-            for func in funcs:
-                result[func.__name__] = func(df)
+        results = {}
+        config = CONFIGS[source_name]
+        if not "aggs" in config:
+            raise Exception("no aggregations in "+source_name)
+        else:
+            for func in config["aggs"]:
+                results[func.__name__] = func(df)
 
-    return result
+    return results
+
+def run_post_aggs(results, source_name="aggs"):
+    """Run post-aggregation aggregations from a given group"""
+    global CONFIGS
+    if not source_name in CONFIGS:
+        valid_groups = (", ").join(CONFIGS.keys())
+        raise ValueError("invalid group name "
+                         + "(current groups: {})".format(valid_groups))
+    else:
+        config = CONFIGS[source_name]
+        if not "post_aggs" in config:
+            print("WARNING: no post-aggs to run")
+            return results
+        else:
+            for func in config["post_aggs"]:
+                results[func.__name__] = func(results)
+
+    return results

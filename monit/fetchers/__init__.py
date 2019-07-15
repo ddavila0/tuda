@@ -8,9 +8,9 @@ MODULE_NAME = MODULE_DIR.split("/")[-2]
 # Import fetcher modules to populate fetch_utils.FETCHERS
 excepts = [__file__, MODULE_DIR+"fetch_utils.py"]
 paths = list(set(glob.glob(MODULE_DIR+"*.py"))-set(excepts))
-for path_to_agg in paths:
-    agg_module = (path_to_agg.split("/")[-1]).split(".py")[0]
-    __import__(MODULE_NAME+"."+agg_module)
+for path_to_fetcher in paths:
+    fetch_module = (path_to_fetcher.split("/")[-1]).split(".py")[0]
+    __import__(MODULE_NAME+"."+fetch_module)
 
 # Configure pyspark
 SPARK_CONFIG = SparkConf().setMaster("yarn").setAppName("CMS Working Set")

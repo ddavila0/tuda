@@ -62,15 +62,10 @@ class hdfetchs():
             end = monthrange(year, m)[1]
 
             # Make datetime objects
-            min_datetime = parser.parse(
-                               "{0} 01 00:00:00 {1} UTC".format(month,
-                                                                year)
-                           )
-            max_datetime = parser.parse(
-                               "{0} {1} 23:59:59 {2} UTC".format(month, 
-                                                                 end, 
-                                                                 year)
-                           )
+            min_str = "{0} 01 00:00:00 {1} UTC".format(month, year)
+            min_datetime = parser.parse(min_str)
+            max_str = "{0} {1} 23:59:59 {2} UTC".format(month, end, year)
+            max_datetime = parser.parse(max_str)
 
             # Fetch HDFS records
             self.min_datetime = min_datetime
@@ -135,9 +130,7 @@ class hdfetchs():
             hdfs_paths = get_hdfs_paths(self.min_datetime.day,
                                         self.max_datetime.day,
                                         self.min_datetime.month,
-                                        self.min_datetime.year,
-                                        self.hdfs_base,
-                                        self.hdfs_ext)
+                                        self.min_datetime.year)
         else:
             for month in range(self.min_datetime.month, self.max_datetime.month+1):
                 month_start = (1 if month != self.min_datetime.month 
@@ -148,27 +141,25 @@ class hdfetchs():
                 month_paths = get_hdfs_paths(month_start, 
                                              month_end, 
                                              month,
-                                             self.min_datetime.year, 
-                                             self.hdfs_base, 
-                                             self.hdfs_ext)
+                                             self.min_datetime.year)
                 hdfs_paths += month_paths
 
         return hdfs_paths
 
-    def get_hdfs_paths(self, day_min, day_max, month, year, hdfs_base,
-                       hdfs_ext):
+    def get_hdfs_paths(self, day_min, day_max, month, year):
         """Create list of hadoop paths for a range of days in a month"""
         if day_min > day_max:
             raise ValueError("Given minimum day > maximum day")
         
         hdfs_paths = []
-        dayrange = self.get_day_ranges(day_min, day_max)
+        day_ranges = self.get_day_ranges(day_min, day_max)
         month = str(month) if month >= 10 else "0"+str(month)
-        for drange in dayrange:
-            hdfs_paths.append(
-                "{0}/{1}/{2}/{3}/*.{4}".format(hdfs_base, year, month, 
-                                               drange, hdfs_ext)
-            )
+        for day_range in day_ranges:
+            path = "{0}/{1}/{2}/{3}/*.{4}".format(self.hdfs_base, year, 
+                                                  month, day_range, 
+                                                  self.hdfs_ext)
+            hdfs_paths.append(path)
+
         return hdfs_paths
 
     def get_day_ranges(self, day1, day2):
@@ -225,28 +216,26 @@ if __name__ == "__main__":
     from argparse import ArgumentParser
     argparser = ArgumentParser(description="Fetch HDFS records.")
     argparser.add_argument("--datemin", type=str, default=None,
-                        help="Minimum date")
+                           help="Minimum date")
     argparser.add_argument("--datemax", type=str, default=None, 
-                        help="Maximum date")
+                           help="Maximum date")
     argparser.add_argument("--source", type=str, default=None, 
-                        help="Name of data source")
+                           help="Name of data source")
     args = argparser.parse_args()
 
-    now = dt.datetime.now()
-    hdfs_base = "/project/monitoring/archive/xrootd/raw/gled"
-    hdfs_ext = "json.gz"
+#     now = dt.datetime.now()
+#     hdfs_base = "/project/monitoring/archive/xrootd/raw/gled"
+#     hdfs_ext = "json.gz"
 
-    if args.datemin and args.datemax:
-        max_datetime = parser.parse(args.datemax)
-        min_datetime = parser.parse(args.datemin)
+#     if args.datemin and args.datemax:
+#         max_datetime = parser.parse(args.datemax)
+#         min_datetime = parser.parse(args.datemin)
 
-        hdfetchs = HDFetchS(min_datetime, max_datetime, hdfs_base, hdfs_ext,
-                            dummy_fetch, verbose=True)
-        hdfetchs.fetch()
-        print(hdfetchs.fname)
-    else:
-        yesterday = now - dt.timedelta(days=1)
-        hdfetchs = HDFetchS(yesterday, now, hdfs_base, hdfs_ext,
-                            dummy_fetch, verbose=True)
-        hdfetchs.fetch()
-        print(hdfetchs.fname)
+#         hdfs = hdfetchs(min_datetime, max_datetime, hdfs_base, hdfs_ext,
+#                         dummy_fetch, verbose=True)
+#         ds = hdfetchs.fetch()
+#     else:
+#         yesterday = now - dt.timedelta(days=1)
+#         hdfs = hdfetchs(yesterday, now, hdfs_base, hdfs_ext,
+#                         dummy_fetch, verbose=True)
+#         ds = hdfs.fetch()

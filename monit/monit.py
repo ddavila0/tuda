@@ -1,11 +1,11 @@
 """MONIT: MONIT Observes at Never-ending Intermittent Timestamps"""
 
-from datetime import timedelta, datetime as dt
+import glob
 from argparse import ArgumentParser, RawTextHelpFormatter
-from calendar import monthrange
+from datetime import timedelta, datetime as dt
+from elastic import elastic
+from hdfetchs import hdfetchs
 from aggs import agg_utils
-# import elastic
-# import hdfetchs
 
 INTERVALS = ["daily", "weekly", "2 weeks", "4 weeks", "monthly",
              "6 months", "9 months", "yearly"]
@@ -13,113 +13,84 @@ SHORT_INTERVALS = INTERVALS[:5]
 LONG_INTERVALS = INTERVALS[-3:]
 PATH_TO_TOKEN = "./token"
 
-def get_timestamp(dt_obj):
-    return float(dt_obj.strftime("%s.%f"))
-
-def subtract_months(this_month, offset=1):
-    if offset < 0 or offset > 11:
-        raise ValueError("invalid month offset")
-    result = this_month-offset
-    if result < 0:
-        return 12+result
-    else:
-        return result
-
 def get_time_interval(interval):
+    """Translate time interval string to datetimes"""
     now = dt.now()
     this_month = int(now.strftime("%m"))
     if interval == "daily":
         yesterday = now - timedelta(days=1)
-        return get_timestamp(yesterday), get_timestamp(now)
+        return yesterday, now
     elif interval == "weekly":
         last_week = now - timedelta(weeks=1)
-        return get_timestamp(last_week), get_timestamp(now)
+        return last_week, now
     elif interval == "2 weeks":
         two_weeks_ago = now - timedelta(weeks=2)
-        return get_timestamp(two_weeks_ago), get_timestamp(now)
+        return two_weeks_ago, now
     elif interval == "4 weeks":
         four_weeks_ago = now - timedelta(weeks=4)
-        return get_timestamp(four_weeks_ago), get_timestamp(now)
+        return four_weeks_ago, now
     elif interval == "monthly":
         last_month = now.replace(
                          month=subtract_months(this_month, offset=1)
                      )
-        return get_timestamp(last_month), get_timestamp(now)
+        return last_month, now
     elif interval == "6 months":
         six_months_ago = now.replace(
                              month=subtract_months(this_month, offset=6)
                          )
-        return get_timestamp(six_months_ago), get_timestamp(now)
+        return six_months_ago, now
     elif interval == "9 months":
         nine_months_ago = now.replace(
                               month=subtract_months(this_month, offset=9)
                           )
-        return get_timestamp(nine_months_ago), get_timestamp(now)
+        return nine_months_ago, now
     elif interval == "yearly":
         last_year = now.replace(year=2018)
-        return get_timestamp(last_year), get_timestamp(now)
+        return last_year, now
     else:
         raise ValueError("invalid interval")
 
-def scan_month_range(min_month, max_month, year):
-    result = 0
-    # TODO: Write this function!
-    return result    
-
-def scan_by_month(min_datetime, max_datetime, aggs):
-    # TODO: properly add aggregations
-    result = 0
-    if min_datetime.year != max_datetime.year:
-        result = scan_month_range(min_datetime.month, 12,
-                                  min_datetime.year)
-        result += scan_month_range(1, max_datetime.month,
-                                   max_datetime.year)
-    else:
-        result = scan_month_range(min_datetime.month, max_datetime.month,
-                                  min_datetime.year) 
-    return result
-
 def monit(interval_code):
+    """Get relevant monitoring data for a given time interval"""
+    results = {}
     interval_code = int(interval_code)
     if interval_code > len(INTERVALS)-1:
         raise ValueError("invalid interval code")
     else:
         interval = INTERVALS[interval_code]
-        min_timestamp, max_timestamp = get_time_interval(interval)
+        use_chunked_scan = INTERVALS[interval_code] in LONG_INTERVALS
 
-        if INTERVALS[interval_code] in SHORT_INTERVALS:
-            # Use elastic search
-            xrootd_df = elastic.fetch_xrootd(PATH_TO_TOKEN,
-                                             fields, aliases,
-                                             min_timestamp, 
-                                             max_timestamp)
-            xrootd_aggs = agg_utils.run_aggs(xrootd_df, "xrootd")
-            del xrootd_df
-            classads_df = elastic.fetch_classads(PATH_TO_TOKEN,
-                                                 fields, aliases,
-                                                 min_timestamp, 
-                                                 max_timestamp)
-            classads_aggs = agg_utils.run_aggs(classads_df, "classads")
-            del classads_df
+        min_datetime, max_datetime = get_time_interval(interval)
+        config_paths = glob.glob("./configs/*.json")
 
-        elif INTERVALS[interval_code] in LONG_INTERVALS:
-            # Use hadoop
-            min_datetime = dt.fromtimestamp(min_timestamp)
-            max_datetime = dt.fromtimestamp(max_timestamp)
-            classads_aggs = scan_by_month(min_datetime, max_datetime,
-                                          aggs.agg_classads)
-            xrootd_aggs = scan_by_month(min_datetime, max_datetime,
-                                        aggs.agg_xrootd)
-    return
+        for config_path in config_paths:
+            with open(config_path, "r") as fin:
+                config = json.load(fin)
+
+            # Set up HDFS context
+            hdfs = hdfetchs(min_datetime, max_datetime, 
+                            config["hdfs_base"], config["hdfs_ext"],
+                            config["source_name"])
+
+            if use_chunked_scan:
+                results[config["source_name"]] = hdfs.chunked_scan()
+
+            else:
+                results[config["source_name"]] = hdfs.direct_scan()
+
+    return results
 
 if __name__ == "__main__":
-    parser = ArgumentParser(description="Monitor cache health.",
-                            formatter_class=RawTextHelpFormatter)
-    readable_interval_codes = ["{0} = {1}".format(c, i)
-                               for c, i in enumerate(INTERVALS)]
-    interval_help = ("Interval Codes:\n"
-                     +("\n").join(readable_interval_codes))
-    parser.add_argument("-i", "--interval", type=int, default=1, 
-                        help=interval_help)
-    args = parser.parse_args()
+    argparser = ArgumentParser(description="Monitor cache health.",
+                               formatter_class=RawTextHelpFormatter)
+    interval_codes = ["{0} = {1}".format(c, i)
+                      for c, i in enumerate(INTERVALS)]
+    interval_help = ("Interval Codes:\n"+("\n").join(interval_codes))
+    argparser.add_argument("-i", "--interval", type=int, default=1, 
+                           help=interval_help)
+    argparser.add_argument("-t", "--token", type=str, default="./token", 
+                           help="Path to file with token")
+    args = argparser.parse_args()
+
+    PATH_TO_TOKEN = args.token
     monit(args.interval)

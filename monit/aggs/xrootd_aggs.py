@@ -16,7 +16,7 @@ def total_actual_reads(df):
     return df.read_bytes.sum()/1e12
 
 @agg_wrapper(source_name="xrootd")
-def num_unique_file_access(df):
+def num_unique_file_accesses(df):
     return (df.groupby("file_name").app_info.nunique()).sum()
 
 @agg_wrapper(source_name="xrootd")

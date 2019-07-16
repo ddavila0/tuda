@@ -39,12 +39,12 @@ class agg_wrapper():
         return
 
 def run_aggs(df, source_name="aggs"):
-    """Run aggregations from a given group"""
+    """Run aggregations from a given source"""
     global CONFIGS
     if not source_name in CONFIGS:
-        valid_groups = (", ").join(CONFIGS.keys())
-        raise ValueError("invalid group name "
-                         + "(current groups: {})".format(valid_groups))
+        valid_sources = (", ").join(CONFIGS.keys())
+        raise ValueError("invalid source name "
+                         + "(current sources: {})".format(valid_sources))
     else:
         results = {}
         config = CONFIGS[source_name]
@@ -57,12 +57,12 @@ def run_aggs(df, source_name="aggs"):
     return results
 
 def run_post_aggs(results, source_name="aggs"):
-    """Run post-aggregation aggregations from a given group"""
+    """Run post-aggregation aggregations from a given source"""
     global CONFIGS
     if not source_name in CONFIGS:
-        valid_groups = (", ").join(CONFIGS.keys())
-        raise ValueError("invalid group name "
-                         + "(current groups: {})".format(valid_groups))
+        valid_sources = (", ").join(CONFIGS.keys())
+        raise ValueError("invalid source name "
+                         + "(current sources: {})".format(valid_sources))
     else:
         config = CONFIGS[source_name]
         if not "post_aggs" in config:
@@ -72,4 +72,10 @@ def run_post_aggs(results, source_name="aggs"):
             for func in config["post_aggs"]:
                 results[func.__name__] = func(results)
 
+    return results
+
+def add_aggs(current_aggs, aggs_to_add):
+    """Add two aggregation results dictionaries together"""
+    results = {a: current_aggs[a]+aggs_to_add[a] 
+               for a in current_aggs.keys() & aggs_to_add.keys()} 
     return results

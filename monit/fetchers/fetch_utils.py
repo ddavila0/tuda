@@ -3,6 +3,11 @@ from pyspark.sql import SparkSession
 
 FETCHERS = {}
 
+# Configure pyspark
+SPARK_CONFIG = SparkConf().setMaster("yarn").setAppName("CMS Working Set")
+SPARK_CONTEXT = SparkContext(conf=SPARK_CONFIG)
+SPARK_SESSION = SparkSession(SPARK_CONTEXT)
+
 class fetch_wrapper():
     """Wrapper for HDFetchS fetchers that maintains an object
        responsible for the organization of the fetcher system
@@ -31,11 +36,11 @@ class fetch_wrapper():
         return
 
 def get_fetcher(source_name):
-    """Return fetcher for a given group"""
+    """Return fetcher for a given source"""
     global FETCHERS
     if not source_name in FETCHERS:
-        valid_groups = (", ").join(FETCHERS.keys())
-        raise ValueError("invalid group name "
-                         + "(current groups: {})".format(valid_groups))
+        valid_sources = (", ").join(FETCHERS.keys())
+        raise ValueError("invalid source name "
+                         + "(current source: {})".format(valid_sources))
 
     return FETCHERS[source_name]

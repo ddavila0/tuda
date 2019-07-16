@@ -4,12 +4,12 @@ import numpy as np
 # ClassAds aggregations
 @agg_wrapper(source_name="classads")
 def num_unique_jobs(df):
-    df["workflow_id"] = (classads_df.workflow_id.map(str)
+    df["workflow_id"] = (df.workflow_id.map(str)
                          + "_"
-                         + classads_df.num_retries.astype(str))
-    df["job_id"] = (classads_df.crab_id.map(str)
-                             + "/"
-                             + classads_df.workflow_id)
+                         + df.num_retries.astype(str))
+    df["job_id"] = (df.crab_id.map(str)
+                    + "/"
+                    + df.workflow_id)
     return df.job_id.nunique()
 
 @agg_wrapper(source_name="classads")

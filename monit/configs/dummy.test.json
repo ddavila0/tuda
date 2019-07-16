@@ -1,0 +1,5 @@
+{
+    "hdfs_base": "/some/path/in/hdfs/", 
+    "hdfs_ext": "ext.gz", 
+    "source_name": "test"
+}

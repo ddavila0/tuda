@@ -1,10 +1,10 @@
 import json
 
-ex_config ={
-    "source_name": "classads", 
-    "hdfs_base": "/project/monitoring/archive/condor/raw/metric",
-    "hdfs_ext": "json.gz"
+dummy_config = {
+    "source_name": "test", 
+    "hdfs_base": "/some/path/in/hdfs/",
+    "hdfs_ext": "ext.gz"
 }
  
-with open("example.json", "w") as fout:
-    json.dump(ex_config, fout, indent=4, sort_keys=True)
+with open("dummy.json", "w") as fout:
+    json.dump(dummy_config, fout, indent=4, sort_keys=True)

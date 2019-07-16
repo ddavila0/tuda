@@ -3,15 +3,14 @@
 
 """Retrieve ClassAds job information using Spark"""
 
+import os
 from pyspark.sql.functions import col
-from .fetch_utils import fetch_wrapper
-from . import SPARK_SESSION as spark
+from .fetch_utils import fetch_wrapper, SPARK_SESSION as spark
 import schemas
 
 @fetch_wrapper("classads")
 def fetch_classads(hdfs_path):
     """Fetch HDFS ClassAds records from a particular path"""
-
     csvreader = spark.read.format("com.databricks.spark.csv").option("nullValue","null").option("mode", "FAILFAST")
     # Path where the input files are
     basepath="/project/awg/cms/CMS_DBS3_PROD_GLOBAL/current"

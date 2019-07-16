@@ -1,4 +1,4 @@
-import datetime as dt
+from datetime import timedelta, datetime as dt
 import os
 from dateutil import parser
 from calendar import monthrange
@@ -24,38 +24,47 @@ class hdfetchs():
         return
 
     def direct_scan(self):
-        """Fetch and aggregate HDFS records within some time range less than
-           a month
+        """Fetch and aggregate HDFS records within some time range less
+           than a month
         """
         ds = self.fetch()
         df = ds.toPandas()
-        aggs = agg_utils.run_aggs(df, self.source_name)
-        aggs = agg_utils.run_post_aggs(aggs, self.source_name)
+        results = agg_utils.run_aggs(df, self.source_name)
+        results = agg_utils.run_post_aggs(results, self.source_name)
 
-        return aggs
+        return results
 
     def chunked_scan(self):
         """Fetch and aggregate HDFS records in month-long chunks"""
+        results = {}
         # Save min/max datetime states locally
         min_month = self.min_datetime.month
         max_month = self.max_datetime.month
+        min_day = self.min_datetime.day
+        max_day = self.max_datetime.day
         if min_datetime.year != max_datetime.year:
             min_year = self.min_datetime.year
             max_year = self.max_datetime.year
             # Min to end of min year
-            aggs = scan_month_range(min_month, 12, min_year)
+            aggs_1 = scan_month_range(min_day, max_day, min_month, 12,
+                                      min_year)
             # Start of max year to max
-            aggs += scan_month_range(1, max_month, max_year)
-            aggs = agg_utils.run_post_aggs(aggs, self.source_name)
+            aggs_2 = scan_month_range(min_day, max_day, 1, max_month,
+                                      max_year)
+            results = agg_utils.add_aggs(aggs_1, aggs_2)
         else:
             year = self.min_datetime.year
-            result = scan_month_range(min_month, max_month, year) 
-        return result
+            results = scan_month_range(min_day, max_day, min_month,
+                                       max_month, year) 
+
+        results = agg_utils.run_post_aggs(results, self.source_name)
+        return results
 
     def scan_month_range(min_month, max_month, year):
         """Fetch and aggregate monthly HDFS records from a range of 
            months within the same year
         """
+        results = {}
         for m in range(min_month, max_month+1):
             # Get month info
             month = "0"+str(m) if m < 10 else str(m)
@@ -76,8 +85,12 @@ class hdfetchs():
             else:
                 df = ds.toPandas()
                 aggs = agg_utils.run_aggs(df, self.source_name)
+                if not results:
+                    results = aggs
+                else:
+                    results = agg_utils.add_aggs(results, aggs)
                 
-        return aggs
+        return results
 
     def fetch(self, save=False, out_name="hdfetchs"):
         """Fetch HDFS records between two given dates as pyspark 
@@ -100,7 +113,7 @@ class hdfetchs():
     def write(self, ds, out_name="hdfetchs"):
         """Write fetched pyspark dataframe to parquet files"""
         # Generate file name
-        f_date = self.get_file_date(min_datetime, max_datetime)
+        f_date = get_file_date(min_datetime, max_datetime)
         f_name = ("_").join([out_name, f_date])
 
         # Write to parquet file on hdfs
@@ -127,10 +140,10 @@ class hdfetchs():
 
         hdfs_paths = []
         if self.min_datetime.month == self.max_datetime.month:
-            hdfs_paths = get_hdfs_paths(self.min_datetime.day,
-                                        self.max_datetime.day,
-                                        self.min_datetime.month,
-                                        self.min_datetime.year)
+            hdfs_paths = self.get_hdfs_paths(self.min_datetime.day,
+                                             self.max_datetime.day,
+                                             self.min_datetime.month,
+                                             self.min_datetime.year)
         else:
             for month in range(self.min_datetime.month, self.max_datetime.month+1):
                 month_start = (1 if month != self.min_datetime.month 
@@ -138,10 +151,10 @@ class hdfetchs():
                 month_end = (monthrange(self.min_datetime.year, month)[1]
                              if month != self.max_datetime.month
                              else self.max_datetime.day)
-                month_paths = get_hdfs_paths(month_start, 
-                                             month_end, 
-                                             month,
-                                             self.min_datetime.year)
+                month_paths = self.get_hdfs_paths(month_start, 
+                                                  month_end, 
+                                                  month,
+                                                  self.min_datetime.year)
                 hdfs_paths += month_paths
 
         return hdfs_paths
@@ -152,7 +165,7 @@ class hdfetchs():
             raise ValueError("Given minimum day > maximum day")
         
         hdfs_paths = []
-        day_ranges = self.get_day_ranges(day_min, day_max)
+        day_ranges = get_day_ranges(day_min, day_max)
         month = str(month) if month >= 10 else "0"+str(month)
         for day_range in day_ranges:
             path = "{0}/{1}/{2}/{3}/*.{4}".format(self.hdfs_base, year, 
@@ -162,80 +175,82 @@ class hdfetchs():
 
         return hdfs_paths
 
-    def get_day_ranges(self, day1, day2):
-        """Create list of regex expression to cover a range of days"""
-        if day1 > day2:
-            raise ValueError("Given first day > last day")
+def get_day_ranges(day1, day2):
+    """Create list of regex expression to cover a range of days"""
+    if day1 > day2:
+        raise ValueError("Given first day > last day")
 
-        days = range(day1, day2+1)
-        regexes = {}
-        for d in days:
-            digits = [int(i) for i in str(d)]
-            is_single = (len(digits) == 1)
-            tens = "0" if is_single else str(digits[0])
-            ones = str(digits[0] if is_single else digits[1])
-            if tens in regexes:
-                cur = regexes[tens]
-                if ones not in cur:
-                    regexes[tens] = cur[:-1]+ones+"]"
-            else:
-                regexes[tens] = tens+"["+ones+"]"
+    days = range(day1, day2+1)
+    regexes = {}
+    for d in days:
+        digits = [int(i) for i in str(d)]
+        is_single = (len(digits) == 1)
+        tens = "0" if is_single else str(digits[0])
+        ones = str(digits[0] if is_single else digits[1])
+        if tens in regexes:
+            cur = regexes[tens]
+            if ones not in cur:
+                regexes[tens] = cur[:-1]+ones+"]"
+        else:
+            regexes[tens] = tens+"["+ones+"]"
 
-        return regexes.values()
+    return regexes.values()
 
-    def get_file_date(self, min_datetime, max_datetime):
-        """Create a unique string for naming output files"""
-        if min_datetime > max_datetime:
-            raise ValueError("given minimum date > maximum date")
+def get_file_date(min_datetime, max_datetime):
+    """Create a unique string for naming output files"""
+    if min_datetime > max_datetime:
+        raise ValueError("given minimum date > maximum date")
 
-        datestr_min = min_datetime.strftime("%m-%d-%Y")
-        datestr_max = max_datetime.strftime("%m-%d-%Y")
-        file_date = ""
+    datestr_min = min_datetime.strftime("%m-%d-%Y")
+    datestr_max = max_datetime.strftime("%m-%d-%Y")
+    file_date = ""
 
-        if min_datetime and max_datetime:
-            same_m = min_datetime.month == max_datetime.month
-            same_d = min_datetime.day == max_datetime.day
-            same_y = min_datetime.year == max_datetime.year
-            if same_m and same_d and same_y:
-                file_date = datestr_min
-            elif same_m and same_y:
-                file_date = "{0}-{1}to{2}-{3}".format(min_datetime.strftime("%m"),
-                                                      min_datetime.strftime("%d"),
-                                                      max_datetime.strftime("%d"),
-                                                      min_datetime.strftime("%Y"))
-            elif same_y:
-                file_date = "{0}-{1}to{2}".format(min_datetime.strftime("%m"),
+    if min_datetime and max_datetime:
+        same_m = min_datetime.month == max_datetime.month
+        same_d = min_datetime.day == max_datetime.day
+        same_y = min_datetime.year == max_datetime.year
+        if same_m and same_d and same_y:
+            file_date = datestr_min
+        elif same_m and same_y:
+            file_date = "{0}-{1}to{2}-{3}".format(min_datetime.strftime("%m"),
                                                   min_datetime.strftime("%d"),
-                                                  datestr_max)
-            else:
-                file_date = "{0}to{1}".format(datestr_min, datestr_max)
-                
-        return file_date
+                                                  max_datetime.strftime("%d"),
+                                                  min_datetime.strftime("%Y"))
+        elif same_y:
+            file_date = "{0}-{1}to{2}".format(min_datetime.strftime("%m"),
+                                              min_datetime.strftime("%d"),
+                                              datestr_max)
+        else:
+            file_date = "{0}to{1}".format(datestr_min, datestr_max)
+            
+    return file_date
 
 if __name__ == "__main__":
     from argparse import ArgumentParser
+    import json
+
     argparser = ArgumentParser(description="Fetch HDFS records.")
     argparser.add_argument("--datemin", type=str, default=None,
                            help="Minimum date")
     argparser.add_argument("--datemax", type=str, default=None, 
                            help="Maximum date")
-    argparser.add_argument("--source", type=str, default=None, 
-                           help="Name of data source")
+    argparser.add_argument("--config", type=str, default=None, 
+                           help="Location of config file")
     args = argparser.parse_args()
 
-#     now = dt.datetime.now()
-#     hdfs_base = "/project/monitoring/archive/xrootd/raw/gled"
-#     hdfs_ext = "json.gz"
+    now = dt.now()
+    with open(args.config, "r") as f_in:
+        config = json.load(f_in)
 
-#     if args.datemin and args.datemax:
-#         max_datetime = parser.parse(args.datemax)
-#         min_datetime = parser.parse(args.datemin)
+    if args.datemin and args.datemax:
+        max_datetime = parser.parse(args.datemax)
+        min_datetime = parser.parse(args.datemin)
 
-#         hdfs = hdfetchs(min_datetime, max_datetime, hdfs_base, hdfs_ext,
-#                         dummy_fetch, verbose=True)
-#         ds = hdfetchs.fetch()
-#     else:
-#         yesterday = now - dt.timedelta(days=1)
-#         hdfs = hdfetchs(yesterday, now, hdfs_base, hdfs_ext,
-#                         dummy_fetch, verbose=True)
-#         ds = hdfs.fetch()
+        hdfs = hdfetchs(min_datetime, max_datetime, config["hdfs_base"], 
+                        config["hdfs_ext"], config["source_name"])
+        ds = hdfs.fetch()
+    else:
+        yesterday = now - dt.timedelta(days=1)
+        hdfs = hdfetchs(yesterday, now, config["hdfs_base"], 
+                        config["hdfs_ext"], config["source_name"])
+        ds = hdfs.fetch()

@@ -1,6 +1,4 @@
 import glob
-from pyspark import SparkConf, SparkContext
-from pyspark.sql import SparkSession
 
 MODULE_DIR = __file__.split("__init__")[0]
 MODULE_NAME = MODULE_DIR.split("/")[-2]
@@ -11,8 +9,3 @@ paths = list(set(glob.glob(MODULE_DIR+"*.py"))-set(excepts))
 for path_to_fetcher in paths:
     fetch_module = (path_to_fetcher.split("/")[-1]).split(".py")[0]
     __import__(MODULE_NAME+"."+fetch_module)
-
-# Configure pyspark
-SPARK_CONFIG = SparkConf().setMaster("yarn").setAppName("CMS Working Set")
-SPARK_CONTEXT = SparkContext(conf=SPARK_CONFIG)
-SPARK_SESSION = SparkSession(SPARK_CONTEXT)

@@ -11,6 +11,7 @@ import schemas
 @fetch_wrapper("classads")
 def fetch_classads(hdfs_path):
     """Fetch HDFS ClassAds records from a particular path"""
+    # DBS dataset info
     csvreader = spark.read.format("com.databricks.spark.csv").option("nullValue","null").option("mode", "FAILFAST")
     # Path where the input files are
     basepath="/project/awg/cms/CMS_DBS3_PROD_GLOBAL/current"
@@ -29,16 +30,16 @@ def fetch_classads(hdfs_path):
     # Desired sites
     sites = ["T2_US_UCSD", "T2_US_Caltech", "T3_US_UCR"]
 
-    ds = (jobreports
+    df = (jobreports
             # Joing dataset DBS table with jobreports
             .join(dbs_datasets, col('data.DESIRED_CMSDataset')==col('d_dataset'))
             # Require datasets from cache
             .filter(
-                    col('d_dataset').rlike(regexp1) |
-                    col('d_dataset').rlike(regexp2) | 
-                    col('d_dataset').rlike(regexp3) | 
-                    col('d_dataset').rlike(regexp4)
-                   )
+                 col('d_dataset').rlike(regexp1) |
+                 col('d_dataset').rlike(regexp2) | 
+                 col('d_dataset').rlike(regexp3) | 
+                 col('d_dataset').rlike(regexp4)
+             )
             # Require at UCSD, Caltech, or UCR
             .filter(col('data.CMSSite').isin(sites))
             # Require CMS jobs
@@ -64,4 +65,5 @@ def fetch_classads(hdfs_path):
              )
         )
 
-    return ds
+    print("[script] Fetched {}".format(hdfs_path))
+    return df

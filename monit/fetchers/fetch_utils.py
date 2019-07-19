@@ -1,12 +1,12 @@
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SparkSession
 
-FETCHERS = {}
-
 # Configure pyspark
 SPARK_CONFIG = SparkConf().setMaster("yarn").setAppName("CMS Working Set")
 SPARK_CONTEXT = SparkContext(conf=SPARK_CONFIG)
 SPARK_SESSION = SparkSession(SPARK_CONTEXT)
+
+FETCHERS = {}
 
 class fetch_wrapper():
     """Wrapper for HDFetchS fetchers that maintains an object

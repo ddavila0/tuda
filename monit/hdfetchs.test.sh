@@ -6,4 +6,4 @@ spark-submit \
     --conf spark.blockManager.port=5101 \
     --conf spark.ui.port=5201 \
     --conf spark.driver.extraClassPath='/eos/project/s/swan/public/hadoop-mapreduce-client-core-2.6.0-cdh5.7.6.jar' \
-    hdfetchs.py --datemin="Jun 23 00:00:00 UTC" --datemax="Jun 29 23:59:59 UTC" --config="./configs/dummy.json"
+    hdfetchs.py --datemin="Jun 23 00:00:00 UTC" --datemax="Jun 29 23:59:59 UTC" --config="./configs/dummy.test.json"

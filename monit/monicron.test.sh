@@ -6,4 +6,4 @@ spark-submit \
     --conf spark.blockManager.port=5101 \
     --conf spark.ui.port=5201 \
     --conf spark.driver.extraClassPath='/eos/project/s/swan/public/hadoop-mapreduce-client-core-2.6.0-cdh5.7.6.jar' \
-    monit.py -i 1
+    monicron.py ${1} 

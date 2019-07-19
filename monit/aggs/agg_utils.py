@@ -1,5 +1,4 @@
 import json
-import os
 import glob
 
 CONFIGS = {}
@@ -54,6 +53,8 @@ def run_aggs(df, source_name="aggs"):
             for func in config["aggs"]:
                 results[func.__name__] = func(df)
 
+    print("Ran aggs for {}".format(source_name))
+    print("Results: {}".format(json.dumps(results, indent=4)))
     return results
 
 def run_post_aggs(results, source_name="aggs"):
@@ -72,10 +73,14 @@ def run_post_aggs(results, source_name="aggs"):
             for func in config["post_aggs"]:
                 results[func.__name__] = func(results)
 
+    print("Ran post-aggs for {}".format(source_name))
+    print("Results: {}".format(json.dumps(results, indent=4)))
     return results
 
 def add_aggs(current_aggs, aggs_to_add):
     """Add two aggregation results dictionaries together"""
     results = {a: current_aggs[a]+aggs_to_add[a] 
-               for a in current_aggs.keys() & aggs_to_add.keys()} 
+               for a in current_aggs.keys()}
+    print("Added aggs")
+    print("Results: {}".format(json.dumps(results, indent=4)))
     return results

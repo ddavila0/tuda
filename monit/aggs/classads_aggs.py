@@ -1,61 +1,45 @@
-import pyspark.sql.functions as fn
-from pyspark.sql.types import StringType
 from .agg_utils import agg_wrapper
 
-# ClassAds aggregations
-@agg_wrapper(source_name="classads")
+@agg_wrapper(source_names=["classads/miniaod", "classads/nanoaod"])
 def num_unique_jobs(df):
-    agg = df.select(
-              fn.concat(
-                  df.crab_id,
-                  fn.lit("/"),
-                  df.workflow_id,
-                  fn.lit("_"),
-                  df.num_retries.cast(StringType())
-              ).alias("job_id"),
-          ).agg(fn.countDistinct("job_id").alias("num_unique_jobs"))
+    df["workflow_id"] = (df.workflow_id.map(str)
+                         + "_"
+                         + df.num_retries.astype(str))
+    df["job_id"] = (df.crab_id.map(str)
+                    + "/"
+                    + df.workflow_id)
+    return df.job_id.nunique()
 
-    return agg.collect()[0]["num_unique_jobs"] 
-
-@agg_wrapper(source_name="classads")
+@agg_wrapper(source_names=["classads/miniaod", "classads/nanoaod"])
 def num_unique_users(df):
-    agg = df.agg(fn.countDistinct("user_hn").alias("num_unique_users"))
-    return agg.collect()[0]["num_unique_users"]
+    return df.user_hn.nunique()
 
-@agg_wrapper(source_name="classads")
+@agg_wrapper(source_names=["classads/miniaod", "classads/nanoaod"])
 def total_walltime(df):
-    agg = df.agg(fn.sum("walltime").alias("total_walltime"))
-    return agg.collect()[0]["total_walltime"]
+    return df.walltime.sum()
 
-@agg_wrapper(source_name="classads")
+@agg_wrapper(source_names=["classads/miniaod", "classads/nanoaod"])
 def total_walltime_times_cpus(df):
-    agg = df.agg(fn.sum(df.walltime*df.num_cpus)
-                   .alias("total_walltime_times_cpus")
-                )
-    return agg.collect()[0]["total_walltime_times_cpus"]
+    return (df.walltime*df.num_cpus).sum()
 
-@agg_wrapper(source_name="classads")
+@agg_wrapper(source_names=["classads/miniaod", "classads/nanoaod"])
 def total_cpu_time(df):
-    agg = df.agg(fn.sum(df.cpu_time).alias("total_cpu_time"))
-    return agg.collect()[0]["total_cpu_time"]
+    return df.cpu_time.sum()
 
-@agg_wrapper(source_name="classads")
+@agg_wrapper(source_names=["classads/miniaod", "classads/nanoaod"])
 def num_exit_code_zero(df):
-    agg = df.agg(
-              fn.count(
-                  fn.when((df.exit_code == 0), True)
-              ).alias("num_exit_code_zero")
-          )
-    return agg.collect()[0]["num_exit_code_zero"]
+    return (df.exit_code == 0).sum()
 
-@agg_wrapper(source_name="classads")
+@agg_wrapper(source_names=["classads/miniaod", "classads/nanoaod"])
 def num_exits(df):
-    return df.select("exit_code").count()
+    return df.shape[0]
 
-@agg_wrapper(source_name="classads", post_agg=True)
-def cpu_eff(aggs):
-    return aggs["total_cpu_time"]/aggs["total_walltime_times_cpus"]
-
-@agg_wrapper(source_name="classads", post_agg=True)
+@agg_wrapper(source_names=["classads/miniaod", "classads/nanoaod"], 
+             post_agg=True)
 def exit_code_frac(aggs):
     return aggs["num_exit_code_zero"]/aggs["num_exits"]
+
+@agg_wrapper(source_names=["classads/miniaod", "classads/nanoaod"],
+             post_agg=True)
+def cpu_eff(aggs):
+    return aggs["total_cpu_time"]/aggs["total_walltime_times_cpus"]

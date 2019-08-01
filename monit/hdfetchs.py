@@ -22,6 +22,7 @@ class hdfetchs():
            than a month
         """
         df = self.fetch()
+        df = df.toPandas()
         results = agg_utils.run_aggs(df, self.source_name)
         results = agg_utils.run_post_aggs(results, self.source_name)
 
@@ -152,10 +153,10 @@ def get_all_file_paths(base, ext, min_datetime, max_datetime):
             if min_datetime.day == max_datetime.day:
                 month_str = get_number_string(month)
                 day_str = get_number_string(min_datetime.day)
-                path = "{0}/{1}/{2}/{3}/*.{4}".format(base, year, 
-                                                      month_str, 
-                                                      day_str, ext)
-                file_paths = [path]
+                path = "{0}/{1}/{2}/*.{3}".format(year, 
+                                                  month_str, 
+                                                  day_str, ext)
+                file_paths = [base+path]
             else:
                 file_paths = get_file_paths(base, ext,
                                             min_datetime.day,
@@ -190,9 +191,9 @@ def get_file_paths(base, ext, min_day, max_day, month, year):
     day_ranges = get_day_ranges(min_day, max_day)
     month = get_number_string(month)
     for day_range in day_ranges:
-        path = "{0}/{1}/{2}/{3}/*.{4}".format(base, year, month, 
-                                              day_range, ext)
-        paths.append(path)
+        path = "{0}/{1}/{2}/*.{3}".format(base, year, month, 
+                                          day_range, ext)
+        paths.append(base+path)
 
     return paths
 

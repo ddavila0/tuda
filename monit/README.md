@@ -7,7 +7,7 @@ Monicron is an easily configurable system that is designed to run daily aggregat
 
 ## Establishing a Monicron Development Environment
 1. Clone or otherwise download this repository
-2. If Docker is not already downloaded, run `docker-install.sh`
+2. If Docker is not already installed, run `docker-install.sh`
 3. Download the CERN HDFS Docker Image (following these [instructions](https://hadoop-user-guide.web.cern.ch/hadoop-user-guide/getstart/client_docker.html))
 ```console
 $ docker login gitlab-registry.cern.ch

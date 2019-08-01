@@ -1,5 +1,5 @@
 {
     "hdfs_base": "/project/monitoring/archive/xrootd/raw/gled",
     "hdfs_ext": "json.gz",
-    "source_name": "xrootd"
+    "source_name": "xrootd/mc"
 }

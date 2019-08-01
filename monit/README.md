@@ -24,6 +24,12 @@ $ sudo iptables -A INPUT -p tcp --match multiport --dports 5001:5300 -j ACCEPT
 ```console
 $ ./run-docker.sh
 ```
+6. Initialize a Kerberos certificate
+```console
+$ kinit <user>
+```
+You can detach from the container by pressing `Ctrl`+`p` followed by `Ctrl`+`q`. Then, you can reattach to the container by 
+running `docker attach <container>`.
 
 ## Adding a HDFS Source
 1. Write a fetching function to a file in [/fetchers](https://github.com/jkguiang/tuda/tree/master/monit/fetchers). Here's an 

@@ -18,13 +18,23 @@ $ docker pull gitlab-registry.cern.ch/db/cerndb-infra-hadoop-conf:master
 ```
 4. Ensure that ports 5001 to 5300 are open so that Spark may use them
 ```console
-$ sudo iptables -A INPUT -p tcp --match multiport --dports 5001:5300 -j ACCEPT
+$ sudo firewall-cmd --permanent --add-port=5001-5300/tcp
+$ sudo firewall-cmd --reload
 ```
 5. Launch the Docker container
 ```console
 $ ./run-docker.sh
+Building monicron image...
+...
+Starting container...
+Intialized container named 264a20792e179c81e2d5f7e72855841348f672fdc9c9ec9d6d22279d9ecdd575
 ```
-6. Initialize a Kerberos certificate
+This will print out the Docker container's name as in the example above where, in this case, the container name is `264a2079...`
+6. Attach your session to the Docker container using the container name `<container>` produced from the last step
+```console
+$ docker attach <container>
+```
+7. Initialize a Kerberos certificate
 ```console
 $ kinit <user>
 ```

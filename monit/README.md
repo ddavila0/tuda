@@ -39,8 +39,7 @@ $ docker attach <container>
 ```console
 $ kinit <user>
 ```
-You can detach from the container by pressing `Ctrl`+`p` followed by `Ctrl`+`q`. Then, you can reattach to the container by 
-running `docker attach <container>`.
+You can detach from the container by pressing `Ctrl`+`p` followed by `Ctrl`+`q`.
 
 ## Adding a HDFS Source
 1. Write a fetching function to a file in [/fetchers](https://github.com/jkguiang/tuda/tree/master/monit/fetchers). Here's an 

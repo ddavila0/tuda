@@ -4,7 +4,7 @@ from .agg_utils import agg_wrapper
 def working_set(df, chunked=False):
     return (df[df.operation == "read"]
                 .drop_duplicates(["file_name", "file_size"])
-                .file_size.sum()/1e12)
+                .file_size.sum())/1e12
 
 @agg_wrapper(source_names=["xrootd/mc", "xrootd/data", "xrootd/user"])
 def total_naive_reads(df):
@@ -25,14 +25,20 @@ def num_unique_files(df):
 @agg_wrapper(source_names=["xrootd/mc", "xrootd/data", "xrootd/user"], 
              post_agg=True)
 def reuse_mult_1(aggs):
-    return aggs["num_unique_file_accesses"]/aggs["num_unique_files"]
+    numer = float(aggs["num_unique_file_accesses"])
+    denom = float(aggs["num_unique_files"])
+    return 0 if denom == 0 else numer/denom
 
 @agg_wrapper(source_names=["xrootd/mc", "xrootd/data", "xrootd/user"], 
              post_agg=True)
 def reuse_mult_2(aggs):
-    return aggs["total_naive_reads"]/aggs["working_set"]
+    numer = aggs["total_naive_reads"]
+    denom = aggs["working_set"]
+    return 0 if denom == 0 else numer/denom
 
 @agg_wrapper(source_names=["xrootd/mc", "xrootd/data", "xrootd/user"], 
              post_agg=True)
 def reuse_mult_3(aggs):
-    return aggs["total_actual_reads"]/aggs["working_set"]
+    numer = aggs["total_actual_reads"]
+    denom = aggs["working_set"]
+    return 0 if denom == 0 else numer/denom

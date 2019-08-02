@@ -6,8 +6,8 @@ from pyspark.sql.functions import col
 from .fetch_utils import fetch_wrapper, SPARK_SESSION as spark
 import schemas
 
-@fetch_wrapper("xrootd")
-def fetch_xrootd(hdfs_path):
+@fetch_wrapper("xrootd/user")
+def fetch_user_xrootd(hdfs_path):
     """Fetch HDFS XRootD records from a particular path"""
     # DBS file info
     csvreader = spark.read.format("com.databricks.spark.csv").option("nullValue","null").option("mode", "FAILFAST")
@@ -28,6 +28,8 @@ def fetch_xrootd(hdfs_path):
             .filter(col('data.server_host').isin(servers))
             # Require only CMS jobs
             .filter(col('data.vo') == "cms")
+            # 'Namespace' filter
+            .filter(col('data.file_lfn').rlike('/store/user*'))
             # Get the job id from DBS  
             .join(dbs_files, col('data.file_lfn')==col('f_logical_file_name'))
             # Select columns to save

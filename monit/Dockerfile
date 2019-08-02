@@ -1,6 +1,6 @@
 FROM gitlab-registry.cern.ch/db/cerndb-infra-hadoop-conf:master
 
-RUN yum update -y && yum install -y python2-pip 
+RUN yum install -y python2-pip 
 RUN pip install --upgrade pip
 COPY requirements.txt /code/requirements.txt
 RUN pip install -r /code/requirements.txt

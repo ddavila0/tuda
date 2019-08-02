@@ -31,7 +31,7 @@ Intialized container named 264a20792e179c81e2d5f7e72855841348f672fdc9c9ec9d6d222
 ```
 This will print out the Docker container's name as in the example above where, in this case, the container name is `264a2079...`
 
-6. Attach your session to the Docker container using the container name `<container>` produced from the last step
+6. Attach your session to the Docker container using the container name `<container>` produced after the previous step
 ```console
 $ docker attach <container>
 ```

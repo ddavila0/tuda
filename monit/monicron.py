@@ -115,6 +115,7 @@ def run_over_yesterday(config_path, save=True, out_dir=EOS_DIR):
         out_file = out_path+"data.json"
         with open(out_file, "w") as f_out:
             json.dump(results, f_out)
+        print("Dumped results to {}".format(out_file))
 
     return results
 
@@ -147,9 +148,9 @@ def run_over_interval(config_path, interval, save=True, in_dir=EOS_DIR):
     results = agg_utils.run_post_aggs(aggs, source_name)
     if save:
         out_path = (in_dir
-                   + "{0}/".format(source_name)
-                   + "{0}/".format(interval)
-                   + "{0}/".format(min_datetime.year))
+                    + "{0}/".format(source_name)
+                    + "{0}/".format(interval)
+                    + "{0}/".format(min_datetime.year))
         if not os.path.exists(out_path):
             os.makedirs(out_path)
 
@@ -157,6 +158,7 @@ def run_over_interval(config_path, interval, save=True, in_dir=EOS_DIR):
         out_file = out_path+file_date+".json"
         with open(out_file, "w") as f_out:
             json.dump(results, f_out)
+        print("Dumped results to {}".format(out_file))
 
     return results
 
@@ -209,17 +211,23 @@ if __name__ == "__main__":
     argparser.add_argument("--config", type=str, default=None,
                            help="Path to config .json file")
     args = argparser.parse_args()
+    # Check args
     if not args.config:
         raise ValueError("invalid path to config file")
-    elif type(args.interval) == int:
+    if args.outdir[-1] != "/":
+        args.outdir += "/"
+    # Run Monicron
+    if type(args.interval) == int:
         if args.interval > len(INTERVALS)-1:
             raise ValueError("invalid interval code")
         else:
             interval = INTERVALS[args.interval]
             print("computing aggs for "+interval)
             results = run_over_interval(args.config, interval, in_dir=args.outdir)
+            print("Results:")
             print(json.dumps(results, indent=4))
     else:
         print("computing aggs for yesterday:")
         results = run_over_yesterday(args.config, out_dir=args.outdir)
+        print("Results:")
         print(json.dumps(results, indent=4))

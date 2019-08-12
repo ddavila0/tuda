@@ -4,8 +4,8 @@ import os
 from argparse import ArgumentParser, RawTextHelpFormatter
 from datetime import timedelta, datetime as dt
 from calendar import monthrange
-from hdfetchs import (hdfetchs, get_file_date, get_all_file_paths, 
-                      get_number_string)
+from hdfetchs import hdfetchs
+from utils import get_number_string, get_all_file_paths, get_file_date
 from aggs import agg_utils
 
 INTERVALS = ["weekly", "2 weeks", "4 weeks", "monthly",
@@ -15,6 +15,25 @@ SHORT_INTERVALS = INTERVALS[:5]
 LONG_INTERVALS = list(set(INTERVALS)-set(SHORT_INTERVALS))
 USER = os.environ["USER"]
 EOS_DIR = "/eos/user/{0}/{1}/monitor/".format(USER[0], USER)
+
+def add_metadata(func):
+    """Format the results (aggregations) of a Monicron function"""
+    def wrapped(*args, **kwargs):
+        config = args[0]
+        # Run/time function
+        start_time = dt.now()
+        results = func(*args, **kwargs)
+        end_time = dt.now()
+        # Add information
+        results["start_time"] = start_time
+        results["end_time"] = end_time
+        results["namespace"] = config["namespace"]
+        results["cache_name"] = config["cache_name"]
+
+        return results
+
+    return wrapped
+        
 
 def subtract_months(this_month, offset=1):
     if offset < 0 or offset > 11:
@@ -82,33 +101,33 @@ def get_time_interval(interval):
     else:
         raise ValueError("invalid interval")
 
-def run_over_yesterday(config_path, save=True, out_dir=EOS_DIR):
+@add_metadata
+def run_over_yesterday(config, save=True, out_base_dir=EOS_DIR):
     """Pull HDFS records for one day, store aggregations"""
     min_datetime, max_datetime = get_time_interval("yesterday")
 
-    # Pull HDFS records, run aggregations
-    with open(config_path, "r") as f_in:
-        config = json.load(f_in)
-
     # Set up HDFS context
-    source_name = config["source_name"]
     hdfs = hdfetchs(min_datetime, max_datetime, 
-                    config["hdfs_base"], config["hdfs_ext"],
-                    source_name)
-
+                    config["hdfs_base"], config["hdfs_ext"], 
+                    config["tag"])
+    # Scan over HDFS files
     results = hdfs.direct_scan()
 
     # Write results to JSON
     if save:
+        if not out_base_dir[-1] == "/":
+            out_base_dir += "/"
+
+        monicron_target_dir = "{0}/{1}/{2}/".format(config["cache_name"], 
+                                                    config["source_name"],
+                                                    config["namespace"])
         month = max_datetime.month
         day = max_datetime.day
         date_dir = "{0}/{1}/{2}/".format(max_datetime.year, 
                                          get_number_string(month),
                                          get_number_string(day))
-        out_path = (out_dir
-                    + "{0}/".format(source_name)
-                    + "daily/"
-                    + date_dir)
+
+        out_path = (out_base_dir+monicron_target_dir+"daily/"+date_dir)
         if not os.path.exists(out_path):
             os.makedirs(out_path)
 
@@ -119,17 +138,15 @@ def run_over_yesterday(config_path, save=True, out_dir=EOS_DIR):
 
     return results
 
-def run_over_interval(config_path, interval, save=True, in_dir=EOS_DIR):
+@add_metadata
+def run_over_interval(config, interval, save=True, in_base_dir=EOS_DIR):
     """Pull daily aggregations within a given integral, store 
        aggregation over that interval
     """
     min_datetime, max_datetime = get_time_interval(interval)
 
-    with open(config_path, "r") as f_in:
-        config = json.load(f_in)
-
-    source_name = config["source_name"]
-    base = (in_dir
+    tag = config["tag"]
+    in_path = (in_base_dir
             + "{0}/".format(source_name)
             + "daily/")
     to_glob = get_all_file_paths(base, "json", min_datetime, 
@@ -145,9 +162,9 @@ def run_over_interval(config_path, interval, save=True, in_dir=EOS_DIR):
                 else:
                     aggs = agg_utils.add_aggs(aggs, new_aggs)
 
-    results = agg_utils.run_post_aggs(aggs, source_name)
+    results = agg_utils.run_post_aggs(aggs, tag)
     if save:
-        out_path = (in_dir
+        out_path = (in_base_dir
                     + "{0}/".format(source_name)
                     + "{0}/".format(interval)
                     + "{0}/".format(min_datetime.year))
@@ -159,38 +176,6 @@ def run_over_interval(config_path, interval, save=True, in_dir=EOS_DIR):
         with open(out_file, "w") as f_out:
             json.dump(results, f_out)
         print("Dumped results to {}".format(out_file))
-
-    return results
-
-def run_direct(interval_code):
-    """Get relevant monitoring data for a given time interval"""
-    results = {}
-    if interval_code > len(INTERVALS)-1:
-        raise ValueError("invalid interval code")
-    else:
-        interval = INTERVALS[interval_code]
-        use_chunked_scan = interval in LONG_INTERVALS
-
-        min_datetime, max_datetime = get_time_interval(interval)
-        config_paths = list(set(glob.glob("./configs/*.json"))
-                            - set(glob.glob("./configs/*.test.json")))
-
-        for config_path in config_paths:
-            with open(config_path, "r") as f_in:
-                config = json.load(f_in)
-
-            print(json.dumps(config, indent=4))
-
-            # Set up HDFS context
-            source_name = config["source_name"]
-            hdfs = hdfetchs(min_datetime, max_datetime, 
-                            config["hdfs_base"], config["hdfs_ext"],
-                            source_name)
-
-            if use_chunked_scan:
-                results[source_name] = hdfs.chunked_scan()
-            else:
-                results[source_name] = hdfs.direct_scan()
 
     return results
 
@@ -216,6 +201,8 @@ if __name__ == "__main__":
         raise ValueError("invalid path to config file")
     if args.outdir[-1] != "/":
         args.outdir += "/"
+    with open(args.config, "r") as fin:
+        config = json.load(fin)
     # Run Monicron
     if type(args.interval) == int:
         if args.interval > len(INTERVALS)-1:
@@ -223,11 +210,11 @@ if __name__ == "__main__":
         else:
             interval = INTERVALS[args.interval]
             print("computing aggs for "+interval)
-            results = run_over_interval(args.config, interval, in_dir=args.outdir)
+            results = run_over_interval(config, interval, in_base_dir=args.outdir)
             print("Results:")
             print(json.dumps(results, indent=4))
     else:
         print("computing aggs for yesterday:")
-        results = run_over_yesterday(args.config, out_dir=args.outdir)
+        results = run_over_yesterday(config, out_base_dir=args.outdir)
         print("Results:")
         print(json.dumps(results, indent=4))

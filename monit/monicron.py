@@ -15,27 +15,9 @@ SHORT_INTERVALS = INTERVALS[:5]
 LONG_INTERVALS = list(set(INTERVALS)-set(SHORT_INTERVALS))
 USER = os.environ["USER"]
 EOS_DIR = "/eos/user/{0}/{1}/monitor/".format(USER[0], USER)
-
-def add_metadata(func):
-    """Format the results (aggregations) of a Monicron function"""
-    def wrapped(*args, **kwargs):
-        config = args[0]
-        # Run/time function
-        start_time = dt.now()
-        results = func(*args, **kwargs)
-        end_time = dt.now()
-        # Add information
-        results["start_time"] = start_time
-        results["end_time"] = end_time
-        results["namespace"] = config["namespace"]
-        results["cache_name"] = config["cache_name"]
-
-        return results
-
-    return wrapped
         
-
 def subtract_months(this_month, offset=1):
+    """Step back some number of months as on a calendar"""
     if offset < 0 or offset > 11:
         raise ValueError("invalid month offset")
     result = this_month-offset
@@ -50,7 +32,6 @@ def get_time_interval(interval):
     this_month = int(now.strftime("%m"))
     if interval == "yesterday":
         yesterday = now - timedelta(days=1, hours=1)
-        print(yesterday)
         start_of_yesterday = yesterday.replace(hour=0, minute=0, 
                                                second=0, microsecond=0)
         end_of_yesterday = yesterday.replace(hour=23, minute=59, 
@@ -101,6 +82,24 @@ def get_time_interval(interval):
     else:
         raise ValueError("invalid interval")
 
+def add_metadata(func):
+    """Format the results (aggregations) of a Monicron function"""
+    def wrapped(*args, **kwargs):
+        config = args[0]
+        # Run/time function
+        start_time = dt.now()
+        results = func(*args, **kwargs)
+        end_time = dt.now()
+        # Add information
+        results["start_time"] = start_time
+        results["end_time"] = end_time
+        results["namespace"] = config["namespace"]
+        results["cache_name"] = config["cache_name"]
+
+        return results
+
+    return wrapped
+
 @add_metadata
 def run_over_yesterday(config, save=True, out_base_dir=EOS_DIR):
     """Pull HDFS records for one day, store aggregations"""
@@ -112,29 +111,6 @@ def run_over_yesterday(config, save=True, out_base_dir=EOS_DIR):
                     config["tag"])
     # Scan over HDFS files
     results = hdfs.direct_scan()
-
-    # Write results to JSON
-    if save:
-        if not out_base_dir[-1] == "/":
-            out_base_dir += "/"
-
-        monicron_target_dir = "{0}/{1}/{2}/".format(config["cache_name"], 
-                                                    config["source_name"],
-                                                    config["namespace"])
-        month = max_datetime.month
-        day = max_datetime.day
-        date_dir = "{0}/{1}/{2}/".format(max_datetime.year, 
-                                         get_number_string(month),
-                                         get_number_string(day))
-
-        out_path = (out_base_dir+monicron_target_dir+"daily/"+date_dir)
-        if not os.path.exists(out_path):
-            os.makedirs(out_path)
-
-        out_file = out_path+"data.json"
-        with open(out_file, "w") as f_out:
-            json.dump(results, f_out)
-        print("Dumped results to {}".format(out_file))
 
     return results
 
@@ -163,21 +139,66 @@ def run_over_interval(config, interval, save=True, in_base_dir=EOS_DIR):
                     aggs = agg_utils.add_aggs(aggs, new_aggs)
 
     results = agg_utils.run_post_aggs(aggs, tag)
-    if save:
-        out_path = (in_base_dir
-                    + "{0}/".format(source_name)
-                    + "{0}/".format(interval)
-                    + "{0}/".format(min_datetime.year))
-        if not os.path.exists(out_path):
-            os.makedirs(out_path)
-
-        file_date = get_file_date(min_datetime, max_datetime) 
-        out_file = out_path+file_date+".json"
-        with open(out_file, "w") as f_out:
-            json.dump(results, f_out)
-        print("Dumped results to {}".format(out_file))
 
     return results
+
+def credentials(file_path=""):
+    """Read credentials from WMA_BROKER environment"""
+    if not file_path:
+        file_path = os.environ.get("WMA_BROKER", "")
+    if not os.path.isfile(file_path):
+        return {}
+    with open(file_path, "r") as fin:
+        creds = json.load(fin)
+
+    return creds
+
+def monicron(interval_code, config_path, creds_path, verbose=True)
+    """Run aggregations and push results through StompAMQ service"""
+    with open(config_path, "r") as fin:
+        config = json.load(fin)
+
+    if type(interval_code) == int:
+        if interval_code > len(INTERVALS)-1:
+            raise ValueError("invalid interval code")
+        else:
+            interval = INTERVALS[interval_code]
+            if verbose: 
+                print("[monicron] Computing aggs for "+interval)
+
+            results = run_over_interval(config, interval, in_base_dir=out_base_dir)
+
+            if verbose:
+                print("[monicron] Results:")
+                print(json.dumps(results, indent=4))
+    else:
+        if verbose:
+            print("[monicron] computing aggs for yesterday:")
+
+        results = run_over_yesterday(config)
+
+        # Establish StompAMQ context
+        creds = credentials(creds_file)
+        host, port = creds['host_and_ports'].split(':')
+        port = int(port)
+        if  creds and StompAMQ:
+            if verbose:
+                print("[monicron] Sending results via StompAMQ")
+
+            amq = StompAMQ(creds['username'], creds['password'], 
+                           creds['producer'], creds['topic'], 
+                           validation_schema=None, 
+                           host_and_ports=[(host, port)])
+
+            hid = results.get("hash", 1)
+            notification, _, _ = amq.make_notification(results, hid)
+
+            if verbose:
+                print("[monicron] Delivered the following package:")
+                print(json.dumps(notification, indent=4))
+
+        else:
+            raise ValueError("missing StompAMQ credentials file")
 
 if __name__ == "__main__":
     # CLI
@@ -196,25 +217,16 @@ if __name__ == "__main__":
     argparser.add_argument("--config", type=str, default=None,
                            help="Path to config .json file")
     args = argparser.parse_args()
+    # StompAMQ credentials file
+    argparser.add_argument("--creds", type=str, default=None,
+                           help="Path to StompAMQ credentials .json file")
+    args = argparser.parse_args()
+
     # Check args
     if not args.config:
         raise ValueError("invalid path to config file")
     if args.outdir[-1] != "/":
         args.outdir += "/"
-    with open(args.config, "r") as fin:
-        config = json.load(fin)
+
     # Run Monicron
-    if type(args.interval) == int:
-        if args.interval > len(INTERVALS)-1:
-            raise ValueError("invalid interval code")
-        else:
-            interval = INTERVALS[args.interval]
-            print("computing aggs for "+interval)
-            results = run_over_interval(config, interval, in_base_dir=args.outdir)
-            print("Results:")
-            print(json.dumps(results, indent=4))
-    else:
-        print("computing aggs for yesterday:")
-        results = run_over_yesterday(config, out_base_dir=args.outdir)
-        print("Results:")
-        print(json.dumps(results, indent=4))
+    monicron(args.interval, args.config, args.creds, args.outdir)

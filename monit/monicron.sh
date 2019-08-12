@@ -6,5 +6,5 @@ for config in ./configs/*.json; do
         --conf spark.blockManager.port=5101 \
         --conf spark.ui.port=5201 \
         --conf spark.driver.extraClassPath='/eos/project/s/swan/public/hadoop-mapreduce-client-core-2.6.0-cdh5.7.6.jar' \
-        monicron.py ${1} --outdir="${OUT_DIR}" --config="${config}"
+        monicron.py ${1} --outdir="${OUT_DIR}" --config="${config}" --creds="${WMA_BROKER}"
 done

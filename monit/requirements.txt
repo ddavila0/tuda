@@ -1,2 +1,2 @@
 pandas==0.24.2
-stomp.py==4.1.21
+CMSMonitoring==0.2.6

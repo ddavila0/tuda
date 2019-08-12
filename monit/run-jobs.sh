@@ -3,4 +3,4 @@ timestamp() {
       date +"%s"
 }
 
-./populate.sh &> "/logs/$(timestamp).txt" &
+./monicron.sh "${1}" &> "/logs/$(timestamp).txt" &

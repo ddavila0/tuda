@@ -15,7 +15,7 @@ COPY monicron.py /monicron/monicron.py
 COPY monicron.test.sh /monicron/monicron.test.sh
 COPY populate.py /monicron/populate.py
 COPY populate.sh /monicron/populate.sh
-COPY run.sh /monicron/run.sh
+COPY run-jobs.sh /monicron/run-jobs.sh
 COPY hdfetchs.py /monicron/hdfetchs.py
 COPY aggs/. /monicron/aggs
 COPY configs/. /monicron/configs

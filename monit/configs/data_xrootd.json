@@ -1,5 +1,8 @@
 {
+    "tag": "xrootd_data",
     "hdfs_base": "/project/monitoring/archive/xrootd/raw/gled",
     "hdfs_ext": "json.gz",
-    "source_name": "xrootd/data"
+    "cache_name": "socal",
+    "source_name": "xrootd",
+    "namespace": "data"
 }

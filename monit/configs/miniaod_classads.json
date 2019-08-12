@@ -1,5 +1,8 @@
 {
+    "tag": "classads_miniaod",
     "hdfs_base": "/project/monitoring/archive/condor/raw/metric",
     "hdfs_ext": "json.gz",
-    "source_name": "classads/miniaod"
+    "cache_name": "socal",
+    "source_name": "classads",
+    "namespace": "miniaod"
 }

@@ -1,0 +1,13 @@
+SHELL=/bin/bash
+
+0 0 * * * ~/public/run-cronjobs.sh >> /tmp/daily.log 2>&1
+0 0 * * Sun ~/public/run-cronjobs.sh 0 >> /tmp/weekly.log 2>&1
+0 0 * * Sun [ $(expr $(date +%W) % 2) -eq 1 ] && ~/public/run-cronjobs.sh 1 >> /tmp/biweekly.log 2>&1
+0 0 * * Sun [ $(expr $(date +%W) % 4) -eq 1 ] && ~/public/run-cronjobs.sh 2 >> /tmp/quadweekly.log 2>&1
+0 0 01 * * ~/public/run-cronjobs.sh 3 >> /tmp/monthly.log 2>&1
+0 0 01 */2 * ~/public/run-cronjobs.sh 4 >> /tmp/bimonthly.log 2>&1
+0 0 01 */3 * ~/public/run-cronjobs.sh 5 >> /tmp/trimonthly.log 2>&1
+0 0 01 */4 * ~/public/run-cronjobs.sh 6 >> /tmp/quadmonthly.log 2>&1
+0 0 01 */6 * ~/public/run-cronjobs.sh 7 >> /tmp/bianually.log 2>&1
+0 0 01 */9 * ~/public/run-cronjobs.sh 8 >> /tmp/dodranially.log 2>&1
+0 0 01 1 * ~/public/run-cronjobs.sh 8 >> /tmp/anually.log 2>&1

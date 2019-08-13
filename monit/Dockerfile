@@ -11,12 +11,16 @@ VOLUME /aggregations
 VOLUME /logs
 
 COPY jguiang.keytab /monicron/jguiang.keytab
-COPY monicron.py /monicron/monicron.py
+COPY dummy_creds.json /monicron/creds.json
+
 COPY monicron.test.sh /monicron/monicron.test.sh
 COPY populate.py /monicron/populate.py
 COPY populate.sh /monicron/populate.sh
+
 COPY run-jobs.sh /monicron/run-jobs.sh
+COPY monicron.py /monicron/monicron.py
 COPY hdfetchs.py /monicron/hdfetchs.py
+COPY utils.py /monicron/utils.py
 COPY aggs/. /monicron/aggs
 COPY configs/. /monicron/configs
 COPY fetchers/. /monicron/fetchers
@@ -26,3 +30,4 @@ RUN kinit -k -t /monicron/jguiang.keytab jguiang@CERN.CH
 WORKDIR /monicron
 
 ENV OUT_DIR /aggregations
+ENV WMA_BROKER /monicron/creds.json

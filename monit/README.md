@@ -47,7 +47,7 @@ example:
 ```python
 from .fetch_utils import fetch_wrapper, SPARK_SESSION as spark
 
-@fetch_wrapper("foo")
+@fetch_wrapper(tag="foo", cache="socal")
 def fetch_foo(hdfs_path):
     """Fetcher function designed to retrieve certain files from a given HDFS path
        and return a Spark Dataframe of those files
@@ -62,12 +62,14 @@ def fetch_foo(hdfs_path):
 
     return df
 ```
+Note that we have associated the function `fetch_foo` with the tag "foo" and the cache "socal" through the decorator `@fetch_wrapper`. This will be important later, but this essentially allows for a plugin system such that new fetchers and aggregations may be added at will for any cache and tied together by a single configuration file.
+
 2. Write some aggregations to a file in [/aggs](https://github.com/jkguiang/tuda/tree/master/monit/aggs). For example, for a 
 source "foo," an aggregation would look like this:
 ```python
 from .agg_utils import agg_wrapper
 
-@agg_wrapper(source_names=["foo"])
+@agg_wrapper(tags=["foo"])
 def some_aggregation(df):
     """Aggregation function that returns some (hopefully) useful value
     
@@ -76,7 +78,7 @@ def some_aggregation(df):
     df: pandas dataframe
     """
  
-    return df.some_col.some_aggregation()
+    return df.some_col.pd_agg_func()
 ```
 It is important to note here that each aggregation function will have its results written to a `data.json` file, where its 
 entry in that file will inherit its name. In this case, were the above function to be run, an entry named "some_aggregation" 
@@ -85,7 +87,7 @@ would be recorded in `data.json`.
 Additionally, you may also design an aggregation that performs calculations on other aggregations. This simply needs to be 
 marked as a "post_agg" as such:
 ```python
-@agg_wrapper(source_names=["foo"], post_agg=True)
+@agg_wrapper(tag=["foo"], post_agg=True)
 def some_post_aggregation(aggs):
     """Aggregation function that aggregates previously made aggregations (i.e. values returned
        by functions where post_agg == False, which is the default configuration)
@@ -95,23 +97,26 @@ def some_post_aggregation(aggs):
     aggs: dictionary of aggregations
     """
 
-    return aggs["bar"]/aggs["baz"]
+    return aggs["some_aggregation"]/aggs["another_aggregation"]
 ```
 By default, the `post_agg` keyword argument is set to `False`.
 
 Finally, an aggregation may point to several sources. This is done by simply including more names in the list supplied to the 
-`source_names` keyword argument:
+`tags` keyword argument:
 ```python
-@agg_wrapper(source_names=["foo", "bar", "baz"])
+@agg_wrapper(tags=["foo", "bar", "baz"])
 ```
-3. Write a configuration file to [/configs](https://github.com/jkguiang/tuda/tree/master/monit/configs). It simply needs to 
-point to the location of the source in HDFS, the extension of those files, and the alias of the source that you tagged your 
-aggregation and fetcher functions with:
+You may have noticed that we do not specify a cache here. One is free to do that by supplying a cache name to the cache keyword in the `@agg_wrapper` decorator, but it is empty by default under the assumption that aggregations are likely to be re-used for many different caches.
+
+3. Write a configuration file to [/configs](https://github.com/jkguiang/tuda/tree/master/monit/configs):
 ```python
 {
+    "tag": "foo_blah",
     "hdfs_base": "/path/to/foo/in/hdfs",
     "hdfs_ext": "json.gz",
-    "source_name": "foo"
+    "cache_name": "socal",
+    "source_name": "foo",
+    "namespace": "blah" # Optional, but allows for greater division of data for a single source
 }
 ```
 

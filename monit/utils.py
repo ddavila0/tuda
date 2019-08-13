@@ -20,10 +20,10 @@ def get_all_file_paths(base, ext, min_datetime, max_datetime):
             if min_datetime.day == max_datetime.day:
                 month_str = get_number_string(month)
                 day_str = get_number_string(min_datetime.day)
-                path = "{0}/{1}/{2}/*.{3}".format(year, 
-                                                  month_str, 
-                                                  day_str, ext)
-                file_paths = [base+path]
+                path = "{0}/{1}/{2}/{3}/*.{4}".format(base, year, 
+                                                      month_str, 
+                                                      day_str, ext)
+                file_paths = [path]
             else:
                 file_paths = get_file_paths(base, ext,
                                             min_datetime.day,

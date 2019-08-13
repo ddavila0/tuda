@@ -8,12 +8,13 @@ class hdfetchs():
     """HDFS Dynamic Fetch Script (HDFetchS)"""
 
     def __init__(self, min_datetime, max_datetime, hdfs_base, hdfs_ext,
-                 tag):
+                 tag, cache_name=""):
         self.min_datetime = min_datetime
         self.max_datetime = max_datetime
         self.hdfs_base = hdfs_base
         self.hdfs_ext = hdfs_ext
-        self.fetcher = fetch_utils.get_fetcher(tag)
+        self.fetcher = fetch_utils.get_fetcher(tag if not cache_name
+                                               else cache_name+"_"+tag)
         self.tag = tag
 
     def direct_scan(self):

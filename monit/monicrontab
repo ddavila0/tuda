@@ -10,4 +10,5 @@ SHELL=/bin/bash
 0 0 01 */4 * ~/public/run-cronjobs.sh 6 >> /tmp/quadmonthly.log 2>&1
 0 0 01 */6 * ~/public/run-cronjobs.sh 7 >> /tmp/bianually.log 2>&1
 0 0 01 */9 * ~/public/run-cronjobs.sh 8 >> /tmp/dodranially.log 2>&1
-0 0 01 1 * ~/public/run-cronjobs.sh 8 >> /tmp/anually.log 2>&1
+0 0 01 1 * ~/public/run-cronjobs.sh 9 >> /tmp/anually.log 2>&1
+

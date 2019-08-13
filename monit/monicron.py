@@ -1,9 +1,11 @@
 import glob
 import json
+import time
 import os
 from argparse import ArgumentParser, RawTextHelpFormatter
 from datetime import timedelta, datetime as dt
 from calendar import monthrange
+from CMSMonitoring.StompAMQ import StompAMQ
 from hdfetchs import hdfetchs
 from utils import get_number_string, get_all_file_paths, get_file_date
 from aggs import agg_utils
@@ -87,16 +89,23 @@ def add_metadata(func):
     def wrapped(*args, **kwargs):
         config = args[0]
         # Run/time function
-        start_time = dt.now()
+        start_time = int(round(time.time()))
         results = func(*args, **kwargs)
-        end_time = dt.now()
+        end_time = int(round(time.time()))
         # Add information
         results["start_time"] = start_time
         results["end_time"] = end_time
         results["namespace"] = config["namespace"]
         results["cache_name"] = config["cache_name"]
+        final_results = {
+            "data": results,
+            "metadata": {
+                "type": config["source_name"],
+                "topic": "cms.xcache."+config["source_name"]
+            }
+        }
 
-        return results
+        return final_results
 
     return wrapped
 
@@ -108,7 +117,7 @@ def run_over_yesterday(config, save=True, out_base_dir=EOS_DIR):
     # Set up HDFS context
     hdfs = hdfetchs(min_datetime, max_datetime, 
                     config["hdfs_base"], config["hdfs_ext"], 
-                    config["tag"])
+                    config["tag"], cache_name=config["cache_name"])
     # Scan over HDFS files
     results = hdfs.direct_scan()
 
@@ -153,7 +162,7 @@ def credentials(file_path=""):
 
     return creds
 
-def monicron(interval_code, config_path, creds_path, verbose=True)
+def monicron(interval_code, config_path, creds_path=None, verbose=True):
     """Run aggregations and push results through StompAMQ service"""
     with open(config_path, "r") as fin:
         config = json.load(fin)
@@ -172,27 +181,34 @@ def monicron(interval_code, config_path, creds_path, verbose=True)
                 print("[monicron] Results:")
                 print(json.dumps(results, indent=4))
     else:
-        if verbose:
-            print("[monicron] computing aggs for yesterday:")
-
-        results = run_over_yesterday(config)
-
-        # Establish StompAMQ context
-        creds = credentials(creds_file)
+        # Get credentials
+        creds = credentials(creds_path)
         host, port = creds['host_and_ports'].split(':')
         port = int(port)
         if  creds and StompAMQ:
             if verbose:
+                print("[monicron] computing aggs for yesterday:")
+
+            # Run aggregations
+            results = run_over_yesterday(config)
+
+            if verbose:
                 print("[monicron] Sending results via StompAMQ")
 
+            # Establish StompAMQ context
             amq = StompAMQ(creds['username'], creds['password'], 
                            creds['producer'], creds['topic'], 
                            validation_schema=None, 
                            host_and_ports=[(host, port)])
 
+            # Format results
+            payload = results["data"]
+            metadata = results["metadata"]
             hid = results.get("hash", 1)
-            notification, _, _ = amq.make_notification(results, hid)
+            notification, _, _ = amq.make_notification(payload, hid,
+                                                       metadata=metadata)
 
+            # Deliver package
             if verbose:
                 print("[monicron] Delivered the following package:")
                 print(json.dumps(notification, indent=4))
@@ -216,7 +232,6 @@ if __name__ == "__main__":
     # Configuration file
     argparser.add_argument("--config", type=str, default=None,
                            help="Path to config .json file")
-    args = argparser.parse_args()
     # StompAMQ credentials file
     argparser.add_argument("--creds", type=str, default=None,
                            help="Path to StompAMQ credentials .json file")

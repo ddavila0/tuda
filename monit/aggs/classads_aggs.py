@@ -39,11 +39,11 @@ def num_exits(df):
 def exit_code_frac(aggs):
     numer = float(aggs["num_exit_code_zero"])
     denom = float(aggs["num_exits"])
-    return 0 if denom == 0 else numer
+    return 0 if denom == 0 else numer/denom
 
 @agg_wrapper(tags=["classads_miniaod", "classads_nanoaod"],
              post_agg=True)
 def cpu_eff(aggs):
     numer = aggs["total_cpu_time"]
     denom = aggs["total_walltime_times_cpus"]
-    return 0 if denom == 0 else numer
+    return 0 if denom == 0 else numer/denom

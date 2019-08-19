@@ -6,19 +6,18 @@ COPY requirements.txt /code/requirements.txt
 RUN pip install -r /code/requirements.txt
 
 RUN mkdir /monicron
-
-VOLUME /aggregations
-VOLUME /logs
+RUN mkdir /aggregations
+RUN mkdir /logs
 
 COPY jguiang.keytab /monicron/jguiang.keytab
-COPY dummy_creds.json /monicron/creds.json
+COPY creds.json /monicron/creds.json
 
-COPY monicron.test.sh /monicron/monicron.test.sh
 COPY populate.py /monicron/populate.py
 COPY populate.sh /monicron/populate.sh
 
 COPY run-jobs.sh /monicron/run-jobs.sh
 COPY monicron.py /monicron/monicron.py
+COPY monicron.sh /monicron/monicron.sh
 COPY hdfetchs.py /monicron/hdfetchs.py
 COPY utils.py /monicron/utils.py
 COPY aggs/. /monicron/aggs

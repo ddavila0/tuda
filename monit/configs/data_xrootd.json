@@ -4,5 +4,6 @@
     "hdfs_ext": "json.gz",
     "cache_name": "socal",
     "source_name": "xrootd",
+    "topic": "cms.xcache.cache",
     "namespace": "data"
 }

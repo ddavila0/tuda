@@ -21,7 +21,7 @@ Although only recently implimented, Monicron has already provided new and useful
 ![Plots](assets/plots.gif)
 
 # Other Tools
-While producing Monicron, various analyses were performed in order to validate steps towards Monicron or otherwise satisfy general curiousity. There are two contained in this repository:
+Various analyses were performed in order to validate steps towards Monicron or otherwise satisfy general curiousity. There are two contained in this repository:
 1. **[ClassAds vs. XRootD Analysis](https://nbviewer.jupyter.org/github/jkguiang/tuda/blob/master/analysis/SanityChecks_XRootD-vs-ClassAds.ipynb):** Early on, an analysis of the agreement between two separate monitoring sources, ClassAds and XRootD covering clientside and serverside cache access information respectively, was performed in order to determine if the two could be reliably coupled in order to form a complete description of cache access patterns. It was found that the two _generally_ agreed, however they did not _completely_ agree for reasons that remain a mystery at the time of writing.
 
 2. **[ClassAds Classifier](https://nbviewer.jupyter.org/github/jkguiang/tuda/blob/master/analysis/BDT.ipynb):** In direct response to the analysis described above, a Boosted Decision Tree (BDT) was trained with the intent of creating a classifier that would determine which ClassAds are likely to not be accounted for in XRootD and vice versa. The BDT did not yield any particularly interesting results, but it established a framework for future efforts.

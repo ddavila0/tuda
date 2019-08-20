@@ -15,9 +15,10 @@ Monicron uses many different technologies that are best introduced by walking th
 
 ### Insights
 Although only recently implimented, Monicron has already provided new and useful information, and those listed here are only a handful of what Monicron delivers.
-- [Preliminary Results]()
+- [Preliminary Results](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-15-2019.pdf)
+- [Refined Study](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-15-2019.pdf)
 
-![Plot](assets/cpu_eff_plots.png)
+![Plot](assets/plots.gif)
 
 # Other Tools
 While producing Monicron, various analyses were performed in order to validate steps towards Monicron or otherwise satisfy general curiousity. There are two contained in this repository:

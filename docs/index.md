@@ -14,7 +14,10 @@ Monicron uses many different technologies that are best introduced by walking th
 ![Technologies](assets/technologies.png)
 
 ### Insights
-Although only recently implimented, Monicron has already provided new and useful information, and those described here are only a handful of what Monicron delivers.
+Although only recently implimented, Monicron has already provided new and useful information, and those listed here are only a handful of what Monicron delivers.
+- [Preliminary Results]()
+
+![Plot](assets/cpu_eff_plots.png)
 
 # Other Tools
 While producing Monicron, various analyses were performed in order to validate steps towards Monicron or otherwise satisfy general curiousity. There are two contained in this repository:
@@ -26,4 +29,4 @@ While producing Monicron, various analyses were performed in order to validate s
 Due to the collaborative nature of any work done at CERN, Monicron has already been the subject of some discussion. Presentations given on Monicron and related TUDA projects are listed here:
 1. [Jul. 31st, 2019](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_07-31-2019.pdf): Outline of proposed aggregations (given at the OSG weekly meeting)
 2. [Aug. 7th, 2019](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-07-2019.pdf): Outline of proposed data structures to be sent to MONIT's database (shared at the CMS Computer Monitoring biweekly meeting)
-3. [Aug. 15th, 2019](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-15-2019.pdf): Preliminary results from Monicron's aggregations (discussed in privated with mentors)
+3. [Aug. 15th, 2019](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-15-2019.pdf): Preliminary results from Monicron's aggregations (discussed in private with mentors)

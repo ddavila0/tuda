@@ -134,12 +134,13 @@ def run_over_interval(config, interval, out_base_dir):
     for glob_pattern in to_glob:
         agg_json_paths = glob.glob(glob_pattern)
         for agg_json_path in agg_json_paths:
-            with open(agg_json_path, "r") as agg_json:
-                new_aggs = json.load(agg_json)
-                if not aggs:
-                    aggs = new_aggs
-                else:
-                    aggs = agg_utils.add_aggs(aggs, new_aggs)
+            if "metadata" not in agg_json_path:
+                with open(agg_json_path, "r") as agg_json:
+                    new_aggs = json.load(agg_json)
+                    if not aggs:
+                        aggs = new_aggs
+                    else:
+                        aggs = agg_utils.add_aggs(aggs, new_aggs)
 
     results = agg_utils.run_post_aggs(aggs, config["tag"])
     results["start_time"] = int(time.mktime(min_datetime.timetuple()))
@@ -204,8 +205,8 @@ def monicron(interval_code, config_path, out_base_dir, creds_path):
         print(json.dumps(results, indent=4))
         payload = results["data"]
         metadata = results["metadata"]
-        hid = results.get("hash", 1)
-        notification, _, _ = amq.make_notification(payload, hid,
+        doc_type = config["source_name"]
+        notification, _, _ = amq.make_notification(payload, doc_type,
                                                    metadata=metadata)
 
         # Get destination path in local cache
@@ -237,7 +238,7 @@ def monicron(interval_code, config_path, out_base_dir, creds_path):
         # Deliver package
         print("[monicron] Delivered the following package:")
         print(json.dumps(notification, indent=4))
-        response = amq.send(data)
+        response = amq.send(notification)
         print("[monicron] Response from AMQ:")
         print(json.dumps(response, indent=4))
 

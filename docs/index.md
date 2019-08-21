@@ -3,7 +3,7 @@
 TUDA is a project developed with funding from Google Summer of Code through the CMS Data Access 
 [project](https://summerofcode.withgoogle.com/projects/#5810325671116800) for [CERN-HSF](http://hepsoftwarefoundation.org/). More specifically, TUDA's namesake "tools" allow for the aggregation and analysis of data pertaining to the usage of the US CMS cache infrastructure.
 
-![GSoC Logo](assets/gsoc.png)
+![GSoC Logo](assets/logos.png)
 
 ### The Cache Infrastructure
 Data is constantly being produced at the Large Hadron Collider (LHC), both in the form of simulations and actual recordings from the detector. Put simply, the LHC produces a _lot_ of data. As such, it quickly became apparent that the distribution of that data must be considered carefully. To this end, a cache infrastructure was created such files may be requested, then cached at various, more convenient locations such that they may be retrieved faster and more efficiently in the future.

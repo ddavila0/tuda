@@ -5,8 +5,14 @@ TUDA is a project developed with funding from Google Summer of Code through the 
 
 ![GSoC Logo](assets/gsoc.png)
 
+### The Cache Infrastructure
+Data is constantly being produced at the Large Hadron Collider (LHC), both in the form of simulations and actual recordings from the detector. Put simply, the LHC produces a _lot_ of data. As such, it quickly became apparent that the distribution of that data must be considered carefully. To this end, a cache infrastructure was created such files may be requested, then cached at various, more convenient locations such that they may be retrieved faster and more efficiently in the future.
+
+### The Problem
+The cache infrastructure poses, of course, an optimization problem itself. In order to address this problem, the caches must first be monitored in order to produce a solution that fits the actual needs of the users. However, current monitoring tools show cache activity in real time, which is not particularly useful for understanding overall cache behavior. Furthermore, a particularly inspired individual may take collect this instantaneous data in order to piece together a more macroscopic view of the cache activity, but this is incredibly time consuming and begs for automation - that is, until Monicron came into the picture.
+
 # Monicron
-Formost among these tools is the [Monicron](https://github.com/jkguiang/tuda/tree/master/monit) application, which aggregates data in regular, predefined intervals, then pushes these aggregations (defined [here](https://github.com/jkguiang/tuda/tree/master/monit/notebooks)) to a database such that graphical dashboards may be used to visualize the aggregated data, allowing for a single user to monitor the health of the US CMS cache infrastructure "at a glance."
+Foremost among these tools is the [Monicron](https://github.com/jkguiang/tuda/tree/master/monit) application, which aggregates data in regular, predefined intervals, then pushes these aggregations (defined [here](https://github.com/jkguiang/tuda/tree/master/monit/notebooks)) to a database such that graphical dashboards may be used to visualize the aggregated data, allowing for a single user to monitor the health of the US CMS cache infrastructure "at a glance."
 
 ### Technologies
 Monicron uses many different technologies that are best introduced by walking through its workflow. First, Pyspark is used to query the Hadoop File System (HDFS) hosted by CERN for data of various categories. Once the data has been collected, it is converted into a Pandas dataframe for final aggregation. A [plugin](https://github.com/jkguiang/tuda/tree/master/monit#adding-a-hdfs-source) system was devised to allow the application to be extentable to other parts of the US CMS cache infrastructure, an extension that is planned to take place in the near future. These aggregations are cached locally, then pushed through StompAMQ to an Elasticsearch database maintained by the MONIT Team at CERN in order to take advantage of the Grafana service set up by them. The entire application is deployed within a Docker container on a VM hosted by CERN Openstack.
@@ -16,12 +22,12 @@ Monicron uses many different technologies that are best introduced by walking th
 ### Insights
 Although only recently implimented, Monicron has already provided new and useful information, and those listed here are only a handful of what Monicron delivers.
 - [Preliminary Results](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-15-2019.pdf)
-- [Refined Study](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-15-2019.pdf)
+- [Refined Study](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-20-2019.pdf)
 
-![Plot](assets/plots.gif)
+![Plots](assets/plots.gif)
 
 # Other Tools
-While producing Monicron, various analyses were performed in order to validate steps towards Monicron or otherwise satisfy general curiousity. There are two contained in this repository:
+Various analyses were performed in order to validate steps towards Monicron or otherwise satisfy general curiousity. There are two contained in this repository:
 1. **[ClassAds vs. XRootD Analysis](https://nbviewer.jupyter.org/github/jkguiang/tuda/blob/master/analysis/SanityChecks_XRootD-vs-ClassAds.ipynb):** Early on, an analysis of the agreement between two separate monitoring sources, ClassAds and XRootD covering clientside and serverside cache access information respectively, was performed in order to determine if the two could be reliably coupled in order to form a complete description of cache access patterns. It was found that the two _generally_ agreed, however they did not _completely_ agree for reasons that remain a mystery at the time of writing.
 
 2. **[ClassAds Classifier](https://nbviewer.jupyter.org/github/jkguiang/tuda/blob/master/analysis/BDT.ipynb):** In direct response to the analysis described above, a Boosted Decision Tree (BDT) was trained with the intent of creating a classifier that would determine which ClassAds are likely to not be accounted for in XRootD and vice versa. The BDT did not yield any particularly interesting results, but it established a framework for future efforts.
@@ -30,4 +36,3 @@ While producing Monicron, various analyses were performed in order to validate s
 Due to the collaborative nature of any work done at CERN, Monicron has already been the subject of some discussion. Presentations given on Monicron and related TUDA projects are listed here:
 1. [Jul. 31st, 2019](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_07-31-2019.pdf): Outline of proposed aggregations (given at the OSG weekly meeting)
 2. [Aug. 7th, 2019](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-07-2019.pdf): Outline of proposed data structures to be sent to MONIT's database (shared at the CMS Computer Monitoring biweekly meeting)
-3. [Aug. 15th, 2019](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-15-2019.pdf): Preliminary results from Monicron's aggregations (discussed in private with mentors)

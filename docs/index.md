@@ -5,8 +5,14 @@ TUDA is a project developed with funding from Google Summer of Code through the 
 
 ![GSoC Logo](assets/gsoc.png)
 
+### The Cache Infrastructure
+Data is constantly being produced at the Large Hadron Collider (LHC), both in the form of simulations and actual recordings from the detector. Put simply, the LHC produces a _lot_ of data. As such, it quickly became apparent that the distribution of that data must be considered carefully. To this end, a cache infrastructure was created such files may be requested, then cached at various, more convenient locations such that they may be retrieved faster and more efficiently in the future.
+
+### The Problem
+The cache infrastructure poses, of course, an optimization problem itself. In order to address this problem, the caches must first be monitored in order to produce a solution that fits the actual needs of the users. However, current monitoring tools show cache activity in real time, which is not particularly useful for understanding overall cache behavior. Furthermore, a particularly inspired individual may take collect this instantaneous data in order to piece together a more macroscopic view of the cache activity, but this is incredibly time consuming and begs for automation - that is, until Monicron came into the picture.
+
 # Monicron
-Formost among these tools is the [Monicron](https://github.com/jkguiang/tuda/tree/master/monit) application, which aggregates data in regular, predefined intervals, then pushes these aggregations (defined [here](https://github.com/jkguiang/tuda/tree/master/monit/notebooks)) to a database such that graphical dashboards may be used to visualize the aggregated data, allowing for a single user to monitor the health of the US CMS cache infrastructure "at a glance."
+Foremost among these tools is the [Monicron](https://github.com/jkguiang/tuda/tree/master/monit) application, which aggregates data in regular, predefined intervals, then pushes these aggregations (defined [here](https://github.com/jkguiang/tuda/tree/master/monit/notebooks)) to a database such that graphical dashboards may be used to visualize the aggregated data, allowing for a single user to monitor the health of the US CMS cache infrastructure "at a glance."
 
 ### Technologies
 Monicron uses many different technologies that are best introduced by walking through its workflow. First, Pyspark is used to query the Hadoop File System (HDFS) hosted by CERN for data of various categories. Once the data has been collected, it is converted into a Pandas dataframe for final aggregation. A [plugin](https://github.com/jkguiang/tuda/tree/master/monit#adding-a-hdfs-source) system was devised to allow the application to be extentable to other parts of the US CMS cache infrastructure, an extension that is planned to take place in the near future. These aggregations are cached locally, then pushed through StompAMQ to an Elasticsearch database maintained by the MONIT Team at CERN in order to take advantage of the Grafana service set up by them. The entire application is deployed within a Docker container on a VM hosted by CERN Openstack.

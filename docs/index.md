@@ -24,7 +24,9 @@ Although only recently implimented, Monicron has already provided new and useful
 - [Preliminary Results](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-15-2019.pdf)
 - [Refined Study](http://uaf-10.t2.ucsd.edu/~jguiang/presentations/monicron/monicron_08-20-2019.pdf)
 
-![Plots](assets/plots.gif)
+As mentioned in the previous section, the aggregated data produced by Monicron can be interactively visualized on Grafana dashboards. These are only accessible to certain members of the CMS collaboration, however an example dashboard is displayed below:
+
+![Dashboard](assets/dashboard.png)
 
 # Other Tools
 Various analyses were performed in order to validate steps towards Monicron or otherwise satisfy general curiousity. There are two contained in this repository:

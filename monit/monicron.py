@@ -93,7 +93,7 @@ def add_metadata(func):
             "data": results,
             "metadata": {
                 "type": config["source_name"],
-                "topic": config["topic"]
+                "topic": "/topic/"+config["topic"]
             }
         }
 
@@ -175,7 +175,7 @@ def monicron(interval_code, config_path, out_base_dir, creds_path):
 
     # Establish StompAMQ context
     amq = StompAMQ(creds["username"], creds["password"], 
-                   creds["producer"], config["topic"], 
+                   creds["producer"], "/topic/"+config["topic"], 
                    validation_schema=None, 
                    host_and_ports=[(host, port)])
 
@@ -218,7 +218,9 @@ def monicron(interval_code, config_path, out_base_dir, creds_path):
         date_dir = ""
         file_date = get_file_date(min_datetime, max_datetime)
         if interval == "daily":
-            date_dir = "/".join(file_date.split("-"))+"/"
+            split_date = file_date.split("-") # [month, day, year]
+            split_date = [split_date[-1]]+split_date[:-1]
+            date_dir = "/".join(split_date)+"/"
         else:
             date_dir = file_date+"/"
 

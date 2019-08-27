@@ -1,4 +1,6 @@
 FROM gitlab-registry.cern.ch/db/cerndb-infra-hadoop-conf:master
+ARG keytab
+ARG user
 
 RUN yum install -y python2-pip 
 RUN pip install --upgrade pip
@@ -9,7 +11,7 @@ RUN mkdir /monicron
 RUN mkdir /aggregations
 RUN mkdir /logs
 
-COPY jguiang.keytab /monicron/jguiang.keytab
+COPY $keytab /monicron/${user}.keytab
 COPY creds.json /monicron/creds.json
 
 COPY populate.py /monicron/populate.py
@@ -24,7 +26,7 @@ COPY aggs/. /monicron/aggs
 COPY configs/. /monicron/configs
 COPY fetchers/. /monicron/fetchers
 
-RUN kinit -k -t /monicron/jguiang.keytab jguiang@CERN.CH
+RUN kinit -k -t /monicron/${user}.keytab ${user}@CERN.CH
 
 WORKDIR /monicron
 

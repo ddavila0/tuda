@@ -2,7 +2,7 @@
 ---
 
 @import "{{ site.theme }}";
-section {
+section.page-header {
     background-image: url("../tracker.jpg") !important;
     background-size: cover;
 }

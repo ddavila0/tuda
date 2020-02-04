@@ -1,7 +1,7 @@
 # What is TUDA?
 
-TUDA is a project developed with funding from Google Summer of Code through the CMS Data Access 
-[project](https://summerofcode.withgoogle.com/projects/#5810325671116800) for [CERN-HSF](http://hepsoftwarefoundation.org/). More specifically, TUDA's namesake "tools" allow for the aggregation and analysis of data pertaining to the usage of the US CMS cache infrastructure.
+TUDA was developed with funding from Google Summer of Code through the CMS Data Access 
+[project](https://summerofcode.withgoogle.com/archive/2019/projects/5441440799260672/) for [CERN-HSF](http://hepsoftwarefoundation.org/). More specifically, TUDA's namesake "tools" allow for the aggregation and analysis of data pertaining to the usage of the US CMS cache infrastructure.
 
 ![GSoC Logo](assets/logos.png)
 
